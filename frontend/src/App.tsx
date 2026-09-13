@@ -42,8 +42,8 @@ function ProtectedRoutes() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={isPersonnel ? <PersonnelDashboardPage /> : <DashboardPage />} />
-        <Route path="/hr" element={<HRPage />} />
-        <Route path="/payroll" element={<HRPage mode="payroll" />} />
+        <Route path="/hr" element={<HRPage key="hr" />} />
+        <Route path="/payroll" element={<HRPage key="payroll" mode="payroll" />} />
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/eos" element={<EosPage />} />
         <Route path="/renewals" element={<RenewalsPage />} />
