@@ -59,3 +59,21 @@ cd frontend && npm run lint && npm run build
    reverse proxy for `/api` and `/uploads`.
 
 See `backend/.env.example` for all environment variables.
+
+## Deployment (Fly.io)
+
+The root `Dockerfile` builds the frontend and serves it from the FastAPI backend on port 8000; `fly.toml` configures the `hrm-system` app with a `hrm_data` volume for uploads.
+
+One-time setup:
+
+```bash
+flyctl auth login
+flyctl apps create hrm-system
+flyctl volumes create hrm_data --region fra --size 1
+flyctl secrets set DATABASE_URL='<supabase session pooler uri>' JWT_SECRET="$(openssl rand -hex 32)" HRM_ADMIN_PASSWORD='<strong password>'
+flyctl deploy
+```
+
+Custom domain: `flyctl certs add hr.example.com`, then add the DNS records Fly prints (A/AAAA or CNAME to `hrm-system.fly.dev`).
+
+Pushes to `main` deploy automatically via `.github/workflows/fly-deploy.yml` (requires the `FLY_API_TOKEN` repository secret).
