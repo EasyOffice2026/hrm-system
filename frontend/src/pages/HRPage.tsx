@@ -1579,7 +1579,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                     {payslipData.ticket_payment > 0 && <div className="flex justify-between"><span>{t("ticket_payment")} / تذكرة السفر</span><span className="text-green-600 font-bold">+{payslipData.ticket_payment.toFixed(3)}</span></div>}
                     {payslipData.housing_allowance > 0 && <div className="flex justify-between"><span>{t("housing_allowance")} / بدل سكن</span><span className="text-green-600 font-bold">+{payslipData.housing_allowance.toFixed(3)}</span></div>}
                     {payslipData.transport_allowance > 0 && <div className="flex justify-between"><span>{t("transport_allowance")} / بدل نقل</span><span className="text-green-600 font-bold">+{payslipData.transport_allowance.toFixed(3)}</span></div>}
-                    <div className="flex justify-between border-t pt-1 mt-1 font-bold"><span>{t("total_allowances")} / إجمالي المستحقات</span><span className="text-green-700">KD {payslipData.allowances?.toFixed(3)}</span></div>
+                    <div className="flex justify-between border-t pt-1 mt-1 font-bold"><span>{t("total_allowances")} / إجمالي المستحقات</span><span className="text-green-700">KD {((payslipData.allowances || 0) + (payslipData.overtime || 0) + (payslipData.bonus || 0) + (payslipData.incentive || 0) + (payslipData.leave_salary || 0) + (payslipData.ticket_payment || 0)).toFixed(3)}</span></div>
                   </div>
                 </div>
 
