@@ -60,6 +60,17 @@ cd frontend && npm run lint && npm run build
 
 See `backend/.env.example` for all environment variables.
 
+## Demo data (client walkthroughs)
+
+```bash
+cd backend
+python -m scripts.demo_data seed    # 8 employees + attendance, overtime, leave, loans, benefits,
+                                    # 2 payroll months, documents, renewal requests, petty cash, EOS
+python -m scripts.demo_data purge   # removes only the seeded rows (tagged DEMO-*)
+```
+
+Point `DATABASE_URL` at the target database (on Fly: `flyctl ssh console -C "python -m scripts.demo_data seed"`).
+
 ## Deployment (Fly.io)
 
 The root `Dockerfile` builds the frontend and serves it from the FastAPI backend on port 8000; `fly.toml` configures the `hrm-system` app with a `hrm_data` volume for uploads.

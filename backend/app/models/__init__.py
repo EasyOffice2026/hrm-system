@@ -15,7 +15,7 @@ from app.models.eos import EosSettlement
 __all__ = [
     "Branch", "User",
     "ExpenseCategory", "Expense",
-    "Brand", "Employer", "Employee", "Attendance", "SalaryPayment", "StaffTransfer", "AdvanceLoan", "LoanRepayment",
+    "Brand", "Employer", "Employee", "Attendance", "OvertimeRecord", "SalaryPayment", "StaffTransfer", "AdvanceLoan", "LoanRepayment",
     "StaffBenefitDeduction", "LeaveRecord", "Resignation", "Contract", "ContractPayment",
     "CashTransaction", "CashBalance",
     "SmtpSettings",
