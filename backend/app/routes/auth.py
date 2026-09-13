@@ -55,6 +55,8 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account disabled")
+    if user.is_expired():
+        raise HTTPException(status_code=403, detail="Account expired")
     token = create_access_token({"sub": str(user.id), "role": user.role, "branch_id": user.branch_id})
     return {
         "access_token": token,

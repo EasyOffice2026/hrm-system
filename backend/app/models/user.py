@@ -15,8 +15,17 @@ class User(Base):
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(DateTime, nullable=True)  # login blocked after this instant; null = never
     allowed_tabs = Column(Text, nullable=True)  # JSON array of allowed tab keys, null = all
     allowed_brands = Column(Text, nullable=True)  # JSON array of brand ids, null = all/derive from branch
+
+    def is_expired(self) -> bool:
+        if self.expires_at is None:
+            return False
+        exp = self.expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        return exp <= datetime.now(timezone.utc)
 
     def get_allowed_tabs(self) -> list[str] | None:
         if self.allowed_tabs is None:

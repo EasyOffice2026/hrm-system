@@ -21,6 +21,8 @@ interface UserItem {
   role: string;
   branch_id: number | null;
   is_active: boolean;
+  expires_at: string | null;
+  is_expired: boolean;
   allowed_tabs: string[] | null;
   allowed_brands: number[] | null;
 }
@@ -66,6 +68,7 @@ export default function SettingsPage() {
   const [uRole, setURole] = useState("staff");
   const [uBranchId, setUBranchId] = useState<string>("");
   const [uAllowedBrands, setUAllowedBrands] = useState<number[]>([]);
+  const [uExpiresAt, setUExpiresAt] = useState("");
   const [uMsg, setUMsg] = useState("");
   const [uMsgType, setUMsgType] = useState<"success" | "error">("success");
 
@@ -168,6 +171,7 @@ export default function SettingsPage() {
     setURole("staff");
     setUBranchId("");
     setUAllowedBrands([]);
+    setUExpiresAt("");
     setEditingUser(null);
     setShowUserForm(false);
   };
@@ -179,6 +183,7 @@ export default function SettingsPage() {
     setURole(u.role);
     setUBranchId(u.branch_id ? String(u.branch_id) : "");
     setUAllowedBrands(u.allowed_brands || []);
+    setUExpiresAt(u.expires_at ? u.expires_at.slice(0, 10) : "");
     setUPassword("");
     setShowUserForm(true);
   };
@@ -192,6 +197,7 @@ export default function SettingsPage() {
     if (uPassword) fd.append("password", uPassword);
     fd.append("branch_id", uRole === "staff" ? (uBranchId || "") : "");
     fd.append("allowed_brands", uAllowedBrands.join(","));
+    fd.append("expires_at", uExpiresAt ? `${uExpiresAt}T23:59:59+00:00` : "");
 
     try {
       if (editingUser) {
@@ -558,6 +564,12 @@ export default function SettingsPage() {
                 ))}
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t("access_expires")}</label>
+              <input type="date" value={uExpiresAt} onChange={e => setUExpiresAt(e.target.value)}
+                className="px-3 py-2 border rounded-lg text-sm" />
+              <p className="text-xs text-gray-500 mt-1">{t("access_expires_hint")}</p>
+            </div>
             <div className="flex gap-2">
               <button type="submit"
                 className="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
@@ -580,6 +592,7 @@ export default function SettingsPage() {
                 <th className="px-3 py-2 text-left">{t("role")}</th>
                 <th className="px-3 py-2 text-left">{t("branch")}</th>
                 <th className="px-3 py-2 text-left">{t("status")}</th>
+                <th className="px-3 py-2 text-left">{t("access_expires")}</th>
                 <th className="px-3 py-2 text-left">{t("actions")}</th>
               </tr>
             </thead>
@@ -601,6 +614,13 @@ export default function SettingsPage() {
                     <span className={`px-2 py-0.5 rounded text-xs ${
                       u.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                     }`}>{u.is_active ? t("active") : t("inactive")}</span>
+                  </td>
+                  <td className="px-3 py-2">
+                    {u.expires_at ? (
+                      <span className={`px-2 py-0.5 rounded text-xs ${
+                        u.is_expired ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                      }`}>{u.is_expired ? t("expired") : u.expires_at.slice(0, 10)}</span>
+                    ) : "—"}
                   </td>
                   <td className="px-3 py-2">
                     <button onClick={() => handleEditUser(u)}

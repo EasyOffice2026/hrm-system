@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
+from sqlalchemy import inspect, text
 
 from app.database import Base, engine, UPLOAD_DIR, SessionLocal
 from app.models import *  # noqa: F401,F403 — register all models
@@ -61,8 +62,26 @@ if os.path.isdir(FRONTEND_DIST):
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
+    _ensure_columns()
     _seed_data()
     _seed_renewals()
+
+
+# Columns added after the initial schema; create_all() does not alter existing tables.
+_ADDED_COLUMNS = [
+    ("users", "expires_at", "TIMESTAMP"),
+]
+
+
+def _ensure_columns():
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table, column, ddl_type in _ADDED_COLUMNS:
+            if not insp.has_table(table):
+                continue
+            existing = {c["name"] for c in insp.get_columns(table)}
+            if column not in existing:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl_type}"))
 
 
 def _seed_renewals():

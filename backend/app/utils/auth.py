@@ -44,7 +44,7 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Invalid token")
 
     user = db.query(User).filter(User.id == user_id).first()
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.is_expired():
         raise HTTPException(status_code=401, detail="User not found")
     return user
 

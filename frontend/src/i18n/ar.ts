@@ -334,6 +334,8 @@ export default {
   personnel_manager: "مدير شؤون الموظفين",
   active: "نشط",
   inactive: "غير نشط",
+  access_expires: "انتهاء صلاحية الدخول",
+  access_expires_hint: "اختياري. يتم حظر تسجيل الدخول بعد هذا التاريخ (مثلاً للحسابات التجريبية). اتركه فارغاً لعدم الانتهاء.",
   no_branch: "جميع الفروع",
   confirm_delete_user: "هل أنت متأكد من حذف هذا المستخدم؟",
   user_created: "تم إنشاء المستخدم بنجاح",

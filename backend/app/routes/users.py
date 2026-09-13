@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Form, Body
 from sqlalchemy.orm import Session
 from typing import Optional
+from datetime import datetime, timezone
 import json
 
 from app.database import get_db
@@ -25,6 +26,22 @@ def _parse_brands(raw: Optional[str]) -> Optional[list[int]]:
     return ids or None
 
 
+def _parse_expires(raw: Optional[str]) -> Optional[datetime]:
+    """ISO-8601 date/datetime string -> aware UTC datetime. Empty -> None (never expires)."""
+    if raw is None:
+        return None
+    raw = raw.strip()
+    if not raw or raw == "null":
+        return None
+    try:
+        dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(400, "expires_at must be an ISO date/datetime")
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 @router.get("/")
 def list_users(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if user.role not in ("owner", "manager", "accountant"):
@@ -38,6 +55,8 @@ def list_users(db: Session = Depends(get_db), user: User = Depends(get_current_u
             "role": u.role,
             "branch_id": u.branch_id,
             "is_active": u.is_active,
+            "expires_at": u.expires_at.isoformat() if u.expires_at else None,
+            "is_expired": u.is_expired(),
             "allowed_tabs": u.get_allowed_tabs(),
             "allowed_brands": u.get_allowed_brands(),
         }
@@ -53,6 +72,7 @@ def create_user(
     role: str = Form("staff"),
     branch_id: Optional[int] = Form(None),
     allowed_brands: Optional[str] = Form(None),
+    expires_at: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -68,6 +88,7 @@ def create_user(
         role=role,
         branch_id=branch_id if role == "staff" else None,
         is_active=True,
+        expires_at=_parse_expires(expires_at),
     )
     new_user.set_allowed_brands(_parse_brands(allowed_brands))
     db.add(new_user)
@@ -86,6 +107,7 @@ def update_user(
     branch_id: Optional[str] = Form(None),
     allowed_brands: Optional[str] = Form(None),
     is_active: str = Form(None),
+    expires_at: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -113,6 +135,8 @@ def update_user(
         target.is_active = is_active.lower() in ("true", "1", "yes")
     if allowed_brands is not None:
         target.set_allowed_brands(_parse_brands(allowed_brands))
+    if expires_at is not None:
+        target.expires_at = _parse_expires(expires_at)
     db.commit()
     return {"message": "User updated"}
 
