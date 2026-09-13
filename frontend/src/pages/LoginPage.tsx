@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
 import { Building2, ArrowLeft } from "lucide-react";
+import Logo from "../components/Logo";
 
 interface PublicBrand {
   id: number;
@@ -80,23 +81,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-emerald-100">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-700 py-10 px-4 relative overflow-hidden">
+      <div className="pointer-events-none absolute -top-40 -left-40 w-[32rem] h-[32rem] rounded-full bg-emerald-500/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-48 -right-32 w-[36rem] h-[36rem] rounded-full bg-emerald-400/10 blur-3xl" />
       <div className="absolute top-4 right-4">
         <button onClick={toggleLang}
-          className="px-3 py-1 text-sm bg-white rounded shadow hover:bg-gray-50">
+          className="px-3 py-1 text-sm bg-white/10 text-white rounded border border-white/20 hover:bg-white/20">
           {i18n.language === "en" ? "العربية" : "English"}
         </button>
       </div>
 
+      <div className="relative text-center mb-8">
+        <Logo height={72} className="mx-auto mb-5 drop-shadow-lg" />
+        <p className="text-emerald-100 text-lg font-medium tracking-wide">{t("app_subtitle")}</p>
+      </div>
+
       {step === "brand" ? (
-        <div className="w-full max-w-2xl px-4">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-emerald-600 rounded-full mx-auto flex items-center justify-center text-white text-2xl font-bold mb-4">
-              م
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800">{t("app_name")}</h1>
-            <p className="text-gray-500 mt-1">{t("select_brand_to_login")}</p>
-          </div>
+        <div className="relative w-full max-w-2xl">
+          <p className="text-center text-emerald-200 mb-6">{t("select_brand_to_login")}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {brands.map((b) => (
               <button key={b.id} onClick={() => chooseBrand(b)}
@@ -117,20 +119,20 @@ export default function LoginPage() {
               </button>
             ))}
             {brands.length === 0 && (
-              <p className="text-center text-gray-400 col-span-full">…</p>
+              <p className="text-center text-emerald-200 col-span-full">…</p>
             )}
           </div>
         </div>
       ) : (
-        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-emerald-600 rounded-full mx-auto flex items-center justify-center text-white mb-4">
-              <Building2 size={28} />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              {brand ? (isAr && brand.name_ar ? brand.name_ar : brand.name_en) : t("app_name")}
-            </h1>
-            <p className="text-gray-500">{t("app_subtitle")}</p>
+        <div className="relative bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-800">{t("login")}</h2>
+            {brand && (
+              <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">
+                <Building2 size={14} />
+                {isAr && brand.name_ar ? brand.name_ar : brand.name_en}
+              </p>
+            )}
           </div>
 
           {brands.length > 1 && (
@@ -167,6 +169,7 @@ export default function LoginPage() {
           </form>
         </div>
       )}
+      <p className="relative mt-8 text-xs text-emerald-200/70">© {new Date().getFullYear()} {t("app_name")}</p>
     </div>
   );
 }

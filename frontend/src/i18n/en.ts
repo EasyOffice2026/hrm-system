@@ -1,6 +1,7 @@
 export default {
-  app_name: "HRM System",
+  app_name: "Nexera Business Solutions",
   app_subtitle: "Human Resource Management",
+  app_tagline: "Powered by Nexera Business Solutions",
   invalid_credentials: "Invalid credentials",
   select_brand_to_login: "Select your brand to log in",
   change_brand: "Change brand",

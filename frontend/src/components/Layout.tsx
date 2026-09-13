@@ -7,6 +7,7 @@ import {
   Building2, ChevronDown, Globe, IdCard, CalendarCheck, HandCoins, Wallet,
 } from "lucide-react";
 import { useState } from "react";
+import Logo from "./Logo";
 
 const PERSONNEL_NAV = ["dashboard", "hr", "attendance", "renewals", "eos", "cash_management", "expenses"];
 
@@ -54,9 +55,9 @@ export default function Layout() {
         text-white transform transition-transform md:relative md:translate-x-0
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
-        <div className="p-4 pb-2">
-          <h1 className="text-xl font-bold">{selectedBrand ? brandLabel : t("app_name")}</h1>
-          <p className="text-emerald-200 text-xs mt-0.5">{t("app_subtitle")}</p>
+        <div className="px-4 pt-5 pb-3 border-b border-white/10">
+          <Logo height={40} className="mb-2" />
+          <p className="text-emerald-200 text-xs tracking-wide">{t("app_subtitle")}</p>
         </div>
 
         {/* Brand switcher */}
@@ -146,11 +147,12 @@ export default function Layout() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm border-b px-4 py-3 flex items-center md:hidden">
+        <header className="bg-emerald-900 text-white shadow-sm px-4 py-3 flex items-center md:hidden">
           <button onClick={() => setSidebarOpen(!sidebarOpen)}>
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <h1 className="text-lg font-semibold mx-auto">{selectedBrand ? brandLabel : t("app_name")}</h1>
+          <Logo variant="mark" height={28} className="mx-auto" />
+          <span className="sr-only">{selectedBrand ? brandLabel : t("app_name")}</span>
         </header>
 
         {/* Group view banner */}

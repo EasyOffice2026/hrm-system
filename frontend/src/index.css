@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/* Nexera brand palette (deep navy) mapped over the `emerald` scale used across the app. */
+@theme {
+  --color-emerald-50: #f2f5fb;
+  --color-emerald-100: #e0e7f4;
+  --color-emerald-200: #c2cfe8;
+  --color-emerald-300: #97acd6;
+  --color-emerald-400: #6684bf;
+  --color-emerald-500: #4565a8;
+  --color-emerald-600: #334f8f;
+  --color-emerald-700: #2a4074;
+  --color-emerald-800: #223458;
+  --color-emerald-900: #172440;
+  --color-emerald-950: #0c1526;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

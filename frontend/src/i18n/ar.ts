@@ -1,6 +1,7 @@
 export default {
-  app_name: "نظام الموارد البشرية",
+  app_name: "نيكسيرا لحلول الأعمال",
   app_subtitle: "إدارة الموارد البشرية",
+  app_tagline: "مقدم من نيكسيرا لحلول الأعمال",
   invalid_credentials: "بيانات الدخول غير صحيحة",
   select_brand_to_login: "اختر علامتك التجارية لتسجيل الدخول",
   change_brand: "تغيير العلامة التجارية",
