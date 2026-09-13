@@ -245,11 +245,35 @@ def _line_total(ln: RenewalRequestLine) -> float:
     return round(qty * (ln.fee or 0) + (ln.extra_charges or 0), 3)
 
 
-def request_out(db: Session, r: RenewalRequest, detail: bool = False):
-    types = _type_map(db)
-    branches = _branch_map(db)
-    emp = db.query(Employee).filter(Employee.id == r.employee_id).first() if r.employee_id else None
-    lic = db.query(CompanyLicense).filter(CompanyLicense.id == r.license_id).first() if r.license_id else None
+class _RequestCtx:
+    """Lookups shared across a batch of request_out() calls to avoid per-row queries."""
+
+    def __init__(self, db: Session, reqs: List[RenewalRequest]):
+        self.types = _type_map(db)
+        self.branches = _branch_map(db)
+        emp_ids = {r.employee_id for r in reqs if r.employee_id}
+        lic_ids = {r.license_id for r in reqs if r.license_id}
+        user_ids = {uid for r in reqs for uid in (r.requested_by, r.approved_by, r.paid_by, r.completed_by) if uid}
+        req_ids = [r.id for r in reqs]
+        self.employees = {e.id: e for e in db.query(Employee).filter(Employee.id.in_(emp_ids)).all()} if emp_ids else {}
+        self.licenses = {l.id: l for l in db.query(CompanyLicense).filter(CompanyLicense.id.in_(lic_ids)).all()} if lic_ids else {}
+        self.users = {u.id: u.full_name for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
+        self.line_counts = dict(
+            db.query(RenewalRequestLine.request_id, func.count(RenewalRequestLine.id))
+            .filter(RenewalRequestLine.request_id.in_(req_ids)).group_by(RenewalRequestLine.request_id).all()
+        ) if req_ids else {}
+
+    def user_name(self, uid: Optional[int]) -> str:
+        return self.users.get(uid, "") if uid else ""
+
+
+def request_out(db: Session, r: RenewalRequest, detail: bool = False, ctx: Optional[_RequestCtx] = None):
+    if ctx is None:
+        ctx = _RequestCtx(db, [r])
+    types = ctx.types
+    branches = ctx.branches
+    emp = ctx.employees.get(r.employee_id) if r.employee_id else None
+    lic = ctx.licenses.get(r.license_id) if r.license_id else None
     is_new_emp = r.group == "staff" and not emp and bool(r.new_emp_name)
     branch_id = emp.branch_id if emp else (lic.branch_id if lic else None)
     if is_new_emp and not branch_id and r.brand_id:
@@ -270,21 +294,21 @@ def request_out(db: Session, r: RenewalRequest, detail: bool = False):
         "branch_id": branch_id, "branch_name": b.name if b else "",
         "urgency": r.urgency or "normal", "notes": r.notes or "", "status": r.status,
         "status_label": STATUS_FLOW.get(r.status, r.status), "total": r.total or 0,
-        "requested_by": r.requested_by, "requested_by_name": _user_name(db, r.requested_by),
+        "requested_by": r.requested_by, "requested_by_name": ctx.user_name(r.requested_by),
         "requested_at": str(r.requested_at)[:16] if r.requested_at else "",
         "submitted_at": str(r.submitted_at)[:16] if r.submitted_at else "",
-        "approved_by_name": _user_name(db, r.approved_by),
+        "approved_by_name": ctx.user_name(r.approved_by),
         "approved_at": str(r.approved_at)[:16] if r.approved_at else "",
         "approved_amount": r.approved_amount, "approval_comment": r.approval_comment or "",
         "paid_date": str(r.paid_date) if r.paid_date else "", "paid_amount": r.paid_amount,
-        "receipt_no": r.receipt_no or "", "paid_by_name": _user_name(db, r.paid_by),
+        "receipt_no": r.receipt_no or "", "paid_by_name": ctx.user_name(r.paid_by),
         "payment_method": r.payment_method or PERSONNEL_PAYMENT_METHOD,
         "completed_date": str(r.completed_date) if r.completed_date else "",
-        "completed_by_name": _user_name(db, r.completed_by),
+        "completed_by_name": ctx.user_name(r.completed_by),
         "completed_at": str(r.completed_at)[:16] if r.completed_at else "",
         "common_expense": bool(r.common_expense),
         "file1": r.file1, "file2": r.file2, "file3": r.file3,
-        "line_count": db.query(func.count(RenewalRequestLine.id)).filter(RenewalRequestLine.request_id == r.id).scalar() or 0,
+        "line_count": ctx.line_counts.get(r.id, 0),
     }
     if detail:
         d["lines"] = _lines_out(db, r.id, types)
@@ -819,7 +843,9 @@ def list_requests(brand_id: Optional[int] = None, status: Optional[str] = None, 
         q = q.filter(func.date(RenewalRequest.requested_at) >= date_from)
     if date_to:
         q = q.filter(func.date(RenewalRequest.requested_at) <= date_to)
-    return [request_out(db, r) for r in q.order_by(RenewalRequest.id.desc()).all()]
+    reqs = q.order_by(RenewalRequest.id.desc()).all()
+    ctx = _RequestCtx(db, reqs)
+    return [request_out(db, r, ctx=ctx) for r in reqs]
 
 
 @router.get("/requests/{req_id}")
