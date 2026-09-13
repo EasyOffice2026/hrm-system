@@ -1039,13 +1039,12 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                   {isManager && <th className="px-3 py-3 text-left">{t("phone")}</th>}
                   <th className="px-3 py-3 text-left">{t("employer_label")}</th>
                   <th className="px-3 py-3 text-left">{t("residency_expiry")}</th>
-                  <th className="px-3 py-3 text-left">{t("health_card_expiry")}</th>
                   <th className="px-3 py-3 text-center">{t("actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {employees.length === 0 ? (
-                  <tr><td colSpan={isManager ? 10 : 8} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+                  <tr><td colSpan={isManager ? 9 : 7} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
                 ) : employees.filter(inBranchFilter).filter(emp => {
                   if (!empSearch) return true;
                   const q = empSearch.toLowerCase();
@@ -1064,7 +1063,6 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                       return i18n.language === "ar" && match?.name_ar ? match.name_ar : emp.employer;
                     })()}</td>
                     <td className="px-3 py-3">{emp.residency_expiry || "—"}</td>
-                    <td className="px-3 py-3">{emp.health_card_expiry || "—"}</td>
                     <td className="px-3 py-3 text-center">
                       <div className="flex gap-2 justify-center">
                         {!isPersonnel && <button onClick={() => startEditEmp(emp)} className="text-blue-600 hover:underline text-xs">{t("edit")}</button>}
