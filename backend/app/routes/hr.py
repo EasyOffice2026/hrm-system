@@ -10,7 +10,14 @@ from app.models.hr import Brand, Employee, Attendance, SalaryPayment, StaffTrans
 from app.models.branch import Branch
 from app.models.expense import Expense, ExpenseCategory
 from app.models.user import User
+from app.models.renewal import EmployeeDocument, RenewalRequest
+from app.models.eos import EosSettlement
 from app.utils.auth import get_current_user
+
+EMPLOYEE_DEPENDENTS = (
+    Attendance, SalaryPayment, StaffTransfer, AdvanceLoan, StaffBenefitDeduction,
+    LeaveRecord, Resignation, EmployeeDocument, RenewalRequest, EosSettlement,
+)
 
 def _personnel_read_only(request: Request, user: User = Depends(get_current_user)):
     if user.role in ("personnel", "personnel_manager") and request.method not in ("GET", "HEAD", "OPTIONS"):
@@ -335,6 +342,15 @@ def delete_employee(
     emp = db.query(Employee).filter(Employee.id == emp_id).first()
     if not emp:
         raise HTTPException(404, "Employee not found")
+    linked = [
+        m.__tablename__ for m in EMPLOYEE_DEPENDENTS
+        if db.query(m.id).filter(m.employee_id == emp_id).first()
+    ]
+    if linked:
+        raise HTTPException(
+            409,
+            "Employee has linked records (" + ", ".join(linked) + "); mark as left instead of deleting",
+        )
     db.delete(emp)
     db.commit()
     return {"message": "Deleted"}
