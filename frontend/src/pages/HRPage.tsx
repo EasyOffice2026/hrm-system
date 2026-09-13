@@ -69,12 +69,16 @@ interface BrandItem { id: number; name_en: string; name_ar: string; }
 
 type Tab = "employees" | "salary" | "transfers" | "loans" | "benefits" | "deductions" | "leaves";
 
-export default function HRPage() {
+const HR_TABS: Tab[] = ["employees", "transfers", "loans", "benefits", "deductions", "leaves"];
+const PAYROLL_TABS: Tab[] = ["salary"];
+
+export default function HRPage({ mode = "hr" }: { mode?: "hr" | "payroll" }) {
   const { t, i18n } = useTranslation();
   const { selectedBrand } = useBrand();
   const companyEn = selectedBrand?.name_en || "HRM System";
   const companyAr = selectedBrand?.name_ar || companyEn;
-  const [tab, setTab] = useState<Tab>("employees");
+  const visibleTabs = mode === "payroll" ? PAYROLL_TABS : HR_TABS;
+  const [tab, setTab] = useState<Tab>(visibleTabs[0]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -841,7 +845,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-        <h2 className="text-2xl font-bold text-gray-800">{t("hr")}</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{t(mode === "payroll" ? "payroll" : "hr")}</h2>
         <div className="flex gap-2">
           <button onClick={() => exportData("csv")}
             className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">
@@ -886,8 +890,8 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit flex-wrap">
-        {(["employees", "salary", "transfers", "loans", "benefits", "deductions", "leaves"] as Tab[]).filter(tb => {
+      <div className={`flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit flex-wrap ${visibleTabs.length < 2 ? "hidden" : ""}`}>
+        {visibleTabs.filter(tb => {
           if (currentUser.role === "owner") return true;
           const restrictedTabs: Tab[] = ["salary", "loans", "deductions"];
           if (restrictedTabs.includes(tb) && !canViewSalary) return false;

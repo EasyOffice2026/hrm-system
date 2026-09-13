@@ -2,7 +2,7 @@ from app.models.branch import Branch
 from app.models.user import User
 from app.models.expense import ExpenseCategory, Expense
 from app.models.hr import (
-    Brand, Employer, Employee, Attendance, SalaryPayment, StaffTransfer, AdvanceLoan, LoanRepayment,
+    Brand, Employer, Employee, Attendance, OvertimeRecord, SalaryPayment, StaffTransfer, AdvanceLoan, LoanRepayment,
     StaffBenefitDeduction, LeaveRecord, Resignation, Contract, ContractPayment,
 )
 from app.models.cash import CashTransaction, CashBalance

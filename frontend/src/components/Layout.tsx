@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useBrand } from "../contexts/BrandContext";
 import {
   LayoutDashboard, Receipt, Users, LogOut, Menu, X, Banknote, Settings, FileText,
-  Building2, ChevronDown, Globe, IdCard, CalendarCheck, HandCoins,
+  Building2, ChevronDown, Globe, IdCard, CalendarCheck, HandCoins, Wallet,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -14,6 +14,7 @@ const navItems: { path: string; icon: typeof LayoutDashboard; key: string; roles
   { path: "/", icon: LayoutDashboard, key: "dashboard" },
   { path: "/hr", icon: Users, key: "hr" },
   { path: "/attendance", icon: CalendarCheck, key: "attendance" },
+  { path: "/payroll", icon: Wallet, key: "payroll", roles: ["owner", "manager", "accountant"] },
   { path: "/renewals", icon: IdCard, key: "renewals", roles: ["owner", "manager", "accountant", "personnel", "personnel_manager"] },
   { path: "/eos", icon: HandCoins, key: "eos", roles: ["owner", "manager", "accountant", "personnel", "personnel_manager"] },
   { path: "/cash", icon: Banknote, key: "cash_management" },

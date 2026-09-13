@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, and_
-from datetime import date, time
+from datetime import date, time, datetime, timezone
 from typing import Optional
 import calendar
 
 from app.database import get_db
-from app.models.hr import Brand, Employee, Attendance, SalaryPayment, StaffTransfer, AdvanceLoan, LoanRepayment, StaffBenefitDeduction, LeaveRecord, Resignation, Contract, ContractPayment, Employer
+from app.models.hr import Brand, Employee, Attendance, OvertimeRecord, SalaryPayment, StaffTransfer, AdvanceLoan, LoanRepayment, StaffBenefitDeduction, LeaveRecord, Resignation, Contract, ContractPayment, Employer
 from app.models.branch import Branch
 from app.models.expense import Expense, ExpenseCategory
 from app.models.user import User
@@ -15,7 +15,7 @@ from app.models.eos import EosSettlement
 from app.utils.auth import get_current_user
 
 EMPLOYEE_DEPENDENTS = (
-    Attendance, SalaryPayment, StaffTransfer, AdvanceLoan, StaffBenefitDeduction,
+    Attendance, OvertimeRecord, SalaryPayment, StaffTransfer, AdvanceLoan, StaffBenefitDeduction,
     LeaveRecord, Resignation, EmployeeDocument, RenewalRequest, EosSettlement,
 )
 
@@ -390,6 +390,156 @@ def mark_attendance(
     return att
 
 
+# --- Overtime sheet ---
+# Kuwait Labour Law Art. 66: +25% ordinary overtime, +50% night work, +100% weekly rest day.
+OVERTIME_MULTIPLIERS = {"weekday": 1.25, "night": 1.5, "rest_day": 2.0, "holiday": 2.0}
+OVERTIME_DAYS_DIVISOR = 26
+OVERTIME_HOURS_PER_DAY = 8
+
+
+def _ot_serialize(r: OvertimeRecord) -> dict:
+    return {
+        "id": r.id, "employee_id": r.employee_id, "date": r.date.isoformat(), "month": r.month,
+        "hours": r.hours, "ot_type": r.ot_type, "rate_multiplier": r.rate_multiplier,
+        "hourly_rate": r.hourly_rate, "amount": r.amount, "notes": r.notes or "",
+        "approval_status": r.approval_status,
+    }
+
+
+def _ot_fill(r: OvertimeRecord, emp: Employee, ot_date: date, hours: float, ot_type: str, month: str, notes: str):
+    r.employee_id = emp.id
+    r.date = ot_date
+    r.month = month or ot_date.strftime("%Y-%m")
+    r.hours = hours
+    r.ot_type = ot_type if ot_type in OVERTIME_MULTIPLIERS else "weekday"
+    r.rate_multiplier = OVERTIME_MULTIPLIERS[r.ot_type]
+    r.hourly_rate = round((emp.actual_salary or 0) / OVERTIME_DAYS_DIVISOR / OVERTIME_HOURS_PER_DAY, 3)
+    r.amount = round(hours * r.hourly_rate * r.rate_multiplier, 3)
+    r.notes = notes or None
+
+
+@router.get("/overtime")
+def list_overtime(employee_id: Optional[int] = None, month: Optional[str] = None,
+                  brand_id: Optional[int] = None,
+                  db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    q = db.query(OvertimeRecord)
+    staff_emp_ids = _staff_emp_ids(db, user)
+    if staff_emp_ids is not None:
+        q = q.filter(OvertimeRecord.employee_id.in_(staff_emp_ids)) if staff_emp_ids else q.filter(False)
+    bb_ids = _brand_branch_ids(db, brand_id)
+    if bb_ids is not None:
+        emp_ids = [e.id for e in db.query(Employee.id).filter(Employee.branch_id.in_(bb_ids)).all()]
+        q = q.filter(OvertimeRecord.employee_id.in_(emp_ids)) if emp_ids else q.filter(False)
+    if employee_id:
+        q = q.filter(OvertimeRecord.employee_id == employee_id)
+    if month:
+        q = q.filter(OvertimeRecord.month == month)
+    hide_salary = user.role not in SALARY_VISIBLE_ROLES
+    out = []
+    for r in q.order_by(OvertimeRecord.date.desc(), OvertimeRecord.id.desc()).all():
+        d = _ot_serialize(r)
+        if hide_salary:
+            d["hourly_rate"] = 0
+            d["amount"] = 0
+        out.append(d)
+    return out
+
+
+@router.post("/overtime")
+def create_overtime(
+    employee_id: int = Form(...), ot_date: str = Form(...), hours: float = Form(...),
+    ot_type: str = Form("weekday"), month: str = Form(""), notes: str = Form(""),
+    db: Session = Depends(get_db), user: User = Depends(get_current_user),
+):
+    if hours <= 0:
+        raise HTTPException(400, "Hours must be greater than zero")
+    emp = db.query(Employee).filter(Employee.id == employee_id).first()
+    if not emp:
+        raise HTTPException(404, "Employee not found")
+    is_mgr = user.role in ("owner", "manager", "accountant")
+    r = OvertimeRecord(
+        approval_status="approved" if is_mgr else "pending_approval",
+        approved_by=user.id if is_mgr else None,
+        approval_date=datetime.now(timezone.utc) if is_mgr else None,
+    )
+    _ot_fill(r, emp, date.fromisoformat(ot_date), hours, ot_type, month, notes)
+    db.add(r)
+    db.commit()
+    db.refresh(r)
+    return _ot_serialize(r)
+
+
+@router.put("/overtime/{ot_id}")
+def update_overtime(
+    ot_id: int,
+    employee_id: int = Form(...), ot_date: str = Form(...), hours: float = Form(...),
+    ot_type: str = Form("weekday"), month: str = Form(""), notes: str = Form(""),
+    db: Session = Depends(get_db), user: User = Depends(get_current_user),
+):
+    if user.role not in ("owner", "manager", "accountant"):
+        raise HTTPException(403, "Not authorized")
+    if hours <= 0:
+        raise HTTPException(400, "Hours must be greater than zero")
+    r = db.query(OvertimeRecord).filter(OvertimeRecord.id == ot_id).first()
+    if not r:
+        raise HTTPException(404, "Record not found")
+    emp = db.query(Employee).filter(Employee.id == employee_id).first()
+    if not emp:
+        raise HTTPException(404, "Employee not found")
+    _ot_fill(r, emp, date.fromisoformat(ot_date), hours, ot_type, month, notes)
+    db.commit()
+    return _ot_serialize(r)
+
+
+@router.post("/overtime/{ot_id}/approve")
+def approve_overtime(ot_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if user.role not in ("owner", "manager", "accountant"):
+        raise HTTPException(403, "Not authorized")
+    r = db.query(OvertimeRecord).filter(OvertimeRecord.id == ot_id).first()
+    if not r:
+        raise HTTPException(404, "Record not found")
+    r.approval_status = "approved"
+    r.approved_by = user.id
+    r.approval_date = datetime.now(timezone.utc)
+    db.commit()
+    return _ot_serialize(r)
+
+
+@router.post("/overtime/{ot_id}/reject")
+def reject_overtime(ot_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if user.role not in ("owner", "manager", "accountant"):
+        raise HTTPException(403, "Not authorized")
+    r = db.query(OvertimeRecord).filter(OvertimeRecord.id == ot_id).first()
+    if not r:
+        raise HTTPException(404, "Record not found")
+    r.approval_status = "rejected"
+    r.approved_by = user.id
+    r.approval_date = datetime.now(timezone.utc)
+    db.commit()
+    return _ot_serialize(r)
+
+
+@router.delete("/overtime/{ot_id}")
+def delete_overtime(ot_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if user.role not in ("owner", "manager", "accountant"):
+        raise HTTPException(403, "Not authorized")
+    r = db.query(OvertimeRecord).filter(OvertimeRecord.id == ot_id).first()
+    if not r:
+        raise HTTPException(404, "Record not found")
+    db.delete(r)
+    db.commit()
+    return {"message": "Deleted"}
+
+
+def _overtime_for_month(db: Session, emp_id: int, month: str) -> float:
+    total = db.query(func.coalesce(func.sum(OvertimeRecord.amount), 0)).filter(
+        OvertimeRecord.employee_id == emp_id,
+        OvertimeRecord.month == month,
+        OvertimeRecord.approval_status == "approved",
+    ).scalar()
+    return round(float(total or 0), 3)
+
+
 SALARY_EXPENSE_CATEGORY = ("Salaries", "الرواتب")
 
 
@@ -709,7 +859,9 @@ def generate_monthly_payroll(
         bonus_total = sum(b.amount for b in ben_deds if b.category == "bonus")
         leave_salary_total = sum(b.amount for b in ben_deds if b.category == "leave_salary")
         ticket_total = sum(b.amount for b in ben_deds if b.category == "ticket")
-        overtime_total = sum(b.amount for b in ben_deds if b.category == "overtime")
+        overtime_total = round(
+            sum(b.amount for b in ben_deds if b.category == "overtime") + _overtime_for_month(db, emp.id, month), 3
+        )
         other_benefit_total = sum(b.amount for b in ben_deds if b.category == "other_benefit")
 
         # Auto-calculate deductions from StaffBenefitDeduction for this month
