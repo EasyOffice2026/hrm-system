@@ -22,6 +22,8 @@ interface UserItem {
   branch_id: number | null;
   is_active: boolean;
   expires_at: string | null;
+  last_login_at: string | null;
+  login_count: number;
   is_expired: boolean;
   allowed_tabs: string[] | null;
   allowed_brands: number[] | null;
@@ -593,6 +595,7 @@ export default function SettingsPage() {
                 <th className="px-3 py-2 text-left">{t("branch")}</th>
                 <th className="px-3 py-2 text-left">{t("status")}</th>
                 <th className="px-3 py-2 text-left">{t("access_expires")}</th>
+                <th className="px-3 py-2 text-left">{t("last_login")}</th>
                 <th className="px-3 py-2 text-left">{t("actions")}</th>
               </tr>
             </thead>
@@ -621,6 +624,11 @@ export default function SettingsPage() {
                         u.is_expired ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
                       }`}>{u.is_expired ? t("expired") : u.expires_at.slice(0, 10)}</span>
                     ) : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-600 whitespace-nowrap">
+                    {u.last_login_at
+                      ? `${new Date(u.last_login_at + (u.last_login_at.endsWith("Z") ? "" : "Z")).toLocaleString()} (${u.login_count})`
+                      : t("never_logged_in")}
                   </td>
                   <td className="px-3 py-2">
                     <button onClick={() => handleEditUser(u)}

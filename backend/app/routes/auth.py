@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -57,6 +58,9 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
         raise HTTPException(status_code=403, detail="Account disabled")
     if user.is_expired():
         raise HTTPException(status_code=403, detail="Account expired")
+    user.last_login_at = datetime.now(timezone.utc)
+    user.login_count = (user.login_count or 0) + 1
+    db.commit()
     token = create_access_token({"sub": str(user.id), "role": user.role, "branch_id": user.branch_id})
     return {
         "access_token": token,

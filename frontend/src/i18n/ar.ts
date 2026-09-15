@@ -335,6 +335,8 @@ export default {
   active: "نشط",
   inactive: "غير نشط",
   access_expires: "انتهاء صلاحية الدخول",
+  last_login: "آخر تسجيل دخول",
+  never_logged_in: "لم يسجل الدخول بعد",
   access_expires_hint: "اختياري. يتم حظر تسجيل الدخول بعد هذا التاريخ (مثلاً للحسابات التجريبية). اتركه فارغاً لعدم الانتهاء.",
   no_branch: "جميع الفروع",
   confirm_delete_user: "هل أنت متأكد من حذف هذا المستخدم؟",

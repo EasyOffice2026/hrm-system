@@ -57,6 +57,8 @@ def list_users(db: Session = Depends(get_db), user: User = Depends(get_current_u
             "is_active": u.is_active,
             "expires_at": u.expires_at.isoformat() if u.expires_at else None,
             "is_expired": u.is_expired(),
+            "last_login_at": u.last_login_at.isoformat() if u.last_login_at else None,
+            "login_count": u.login_count or 0,
             "allowed_tabs": u.get_allowed_tabs(),
             "allowed_brands": u.get_allowed_brands(),
         }

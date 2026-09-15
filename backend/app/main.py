@@ -70,6 +70,8 @@ def startup():
 # Columns added after the initial schema; create_all() does not alter existing tables.
 _ADDED_COLUMNS = [
     ("users", "expires_at", "TIMESTAMP"),
+    ("users", "last_login_at", "TIMESTAMP"),
+    ("users", "login_count", "INTEGER NOT NULL DEFAULT 0"),
 ]
 
 

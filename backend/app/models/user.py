@@ -16,6 +16,8 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at = Column(DateTime, nullable=True)  # login blocked after this instant; null = never
+    last_login_at = Column(DateTime, nullable=True)
+    login_count = Column(Integer, default=0, nullable=False)
     allowed_tabs = Column(Text, nullable=True)  # JSON array of allowed tab keys, null = all
     allowed_brands = Column(Text, nullable=True)  # JSON array of brand ids, null = all/derive from branch
 

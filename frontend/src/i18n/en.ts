@@ -335,6 +335,8 @@ export default {
   active: "Active",
   inactive: "Inactive",
   access_expires: "Access Expires",
+  last_login: "Last Login",
+  never_logged_in: "Never logged in",
   access_expires_hint: "Optional. Login is blocked after this date (e.g. for trial accounts). Leave empty for no expiry.",
   no_branch: "All Branches",
   confirm_delete_user: "Are you sure you want to delete this user?",
