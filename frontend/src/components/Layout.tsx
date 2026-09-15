@@ -53,7 +53,8 @@ export default function Layout() {
       <aside className={`
         fixed inset-y-0 z-30 w-64 bg-gradient-to-b from-emerald-700 to-emerald-900
         text-white transform transition-transform md:relative md:translate-x-0
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        flex flex-col
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full"}
       `}>
         <div className="px-4 pt-5 pb-3 border-b border-white/10">
           <Logo height={40} className="mb-2" />
@@ -94,7 +95,7 @@ export default function Layout() {
           </div>
         )}
 
-        <nav className="mt-1">
+        <nav className="mt-1 flex-1 overflow-y-auto">
           {navItems
             .filter(item => !item.roles || item.roles.includes(user?.role || ""))
             .filter(item => !["personnel", "personnel_manager"].includes(user?.role || "") || PERSONNEL_NAV.includes(item.key))
@@ -119,8 +120,8 @@ export default function Layout() {
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-0 w-full p-4 border-t border-emerald-600">
-          <div className="text-sm text-emerald-200 mb-2">{user?.full_name}</div>
+        <div className="shrink-0 p-4 border-t border-emerald-600 bg-emerald-900">
+          <div className="text-sm text-emerald-200 mb-2 truncate">{user?.full_name}</div>
           <div className="flex gap-2">
             <button onClick={toggleLang}
               className="flex-1 py-1.5 text-xs bg-emerald-600 rounded hover:bg-emerald-500 transition">
