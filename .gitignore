@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.db
+__pycache__/
+*.pyc
+uploads/
+.vite/
+build/
+*.egg-info/
+.venv/
+backend/hrm.db
