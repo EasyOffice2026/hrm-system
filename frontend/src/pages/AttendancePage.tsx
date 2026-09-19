@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { CalendarCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiPost, apiFetch } from "../contexts/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -117,26 +118,26 @@ export default function AttendancePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-        <h2 className="text-2xl font-bold text-gray-800">{t("attendance")}</h2>
+        <div className="flex items-center gap-3"><div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-700 items-center justify-center shrink-0"><CalendarCheck size={20} /></div><h2 className="page-title">{t("attendance")}</h2></div>
         {tab === "attendance" && canEdit && (
           <button onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm">
+            className="btn btn-primary">
             {showForm ? t("cancel") : t("add_new")}
           </button>
         )}
         {tab === "overtime" && canEdit && (
           <button onClick={() => { setShowOtForm(!showOtForm); setEditingOt(null); }}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm">
+            className="btn btn-primary">
             {showOtForm ? t("cancel") : t("add_overtime")}
           </button>
         )}
       </div>
 
-      <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-4 bg-gray-100/80 p-1 rounded-xl w-fit flex-wrap">
         {(["attendance", "overtime"] as Tab[]).map(tb => (
           <button key={tb} onClick={() => setTab(tb)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              tab === tb ? "bg-white shadow text-emerald-700" : "text-gray-600 hover:text-gray-800"
+              tab === tb ? "bg-white shadow-sm text-emerald-700" : "text-gray-600 hover:text-gray-800"
             }`}>{t(tb === "attendance" ? "attendance" : "overtime_sheet")}</button>
         ))}
       </div>
@@ -144,7 +145,7 @@ export default function AttendancePage() {
       {tab === "attendance" && (
         <>
           {showForm && (
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border mb-6 space-y-4">
+            <form onSubmit={handleSubmit} className="card p-5 mb-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t("employees")}</label>
@@ -174,15 +175,15 @@ export default function AttendancePage() {
                 </select>
               </div>
               <button type="submit"
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm">
+                className="btn btn-primary">
                 {t("save")}
               </button>
             </form>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b">
                 <tr>
                   <th className="px-4 py-3 text-start">{t("date")}</th>
                   <th className="px-4 py-3 text-start">{t("name")}</th>
@@ -193,15 +194,15 @@ export default function AttendancePage() {
               </thead>
               <tbody>
                 {records.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
                 ) : records.map(r => (
-                  <tr key={r.id} className="border-b hover:bg-gray-50">
+                  <tr key={r.id} className="border-b hover:bg-emerald-50/40">
                     <td className="px-4 py-3">{r.date}</td>
                     <td className="px-4 py-3">{empName(r.employee_id)}</td>
                     <td className="px-4 py-3">{r.check_in || "-"}</td>
                     <td className="px-4 py-3">{r.check_out || "-"}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs ${statusColor(r.status)}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor(r.status)}`}>
                         {t(r.status)}
                       </span>
                     </td>
@@ -232,7 +233,7 @@ export default function AttendancePage() {
           </div>
 
           {showOtForm && (
-            <form key={editingOt?.id ?? "new"} onSubmit={handleOtSubmit} className="bg-white p-6 rounded-xl shadow-sm border mb-6 space-y-4">
+            <form key={editingOt?.id ?? "new"} onSubmit={handleOtSubmit} className="card p-5 mb-6 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t("employees")}</label>
@@ -265,15 +266,15 @@ export default function AttendancePage() {
                 </div>
               </div>
               <button type="submit"
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm">
+                className="btn btn-primary">
                 {t("save")}
               </button>
             </form>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b">
                 <tr>
                   <th className="px-4 py-3 text-start">{t("date")}</th>
                   <th className="px-4 py-3 text-start">{t("name")}</th>
@@ -289,9 +290,9 @@ export default function AttendancePage() {
               </thead>
               <tbody>
                 {otRecords.length === 0 ? (
-                  <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+                  <tr><td colSpan={10} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
                 ) : otRecords.map(r => (
-                  <tr key={r.id} className="border-b hover:bg-gray-50">
+                  <tr key={r.id} className="border-b hover:bg-emerald-50/40">
                     <td className="px-4 py-3">{r.date}</td>
                     <td className="px-4 py-3">{empName(r.employee_id)}</td>
                     <td className="px-4 py-3">{t(`ot_${r.ot_type}`)}</td>
@@ -300,7 +301,7 @@ export default function AttendancePage() {
                     <td className="px-4 py-3 text-end">x{r.rate_multiplier}</td>
                     {isManager && <td className="px-4 py-3 text-end font-medium">{fmt(r.amount)}</td>}
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs ${statusColor(r.approval_status)}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor(r.approval_status)}`}>
                         {t(r.approval_status)}
                       </span>
                     </td>

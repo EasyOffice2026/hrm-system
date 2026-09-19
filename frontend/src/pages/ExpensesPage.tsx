@@ -1,3 +1,5 @@
+import { toastError } from "../components/toastStore";
+import { Receipt } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiPost, apiDownload, apiFetch } from "../contexts/api";
@@ -84,7 +86,7 @@ export default function ExpensesPage() {
     fd.append("name", newCatName.trim());
     fd.append("name_ar", newCatNameAr.trim());
     const res = await apiFetch("/api/expenses/categories", { method: "POST", body: fd });
-    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || "Error"); return; }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); toastError(d.detail || "Error"); return; }
     setNewCatName(""); setNewCatNameAr("");
     loadCategories();
   };
@@ -97,14 +99,14 @@ export default function ExpensesPage() {
   const deleteCategory = async (id: number) => {
     if (!confirm(t("confirm_delete"))) return;
     const res = await apiFetch(`/api/expenses/categories/${id}`, { method: "DELETE" });
-    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || "Error"); return; }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); toastError(d.detail || "Error"); return; }
     loadCategories();
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-2xl font-bold text-gray-800">{t("expenses")}</h2>
+        <div className="flex items-center gap-3"><div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-700 items-center justify-center shrink-0"><Receipt size={20} /></div><h2 className="page-title">{t("expenses")}</h2></div>
         {(
           <div className="flex gap-2">
             <button onClick={() => exportData("csv")}
@@ -120,7 +122,7 @@ export default function ExpensesPage() {
               {t("export_pdf")}
             </button>
             <button onClick={() => { setShowForm(!showForm); setEditingExpense(null); }}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm">
+              className="btn btn-primary">
               {showForm ? t("cancel") : t("add_new")}
             </button>
           </div>
@@ -148,7 +150,7 @@ export default function ExpensesPage() {
       {(
         <>
           {(showForm || editingExpense) && (
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border mb-6 space-y-4">
+            <form onSubmit={handleSubmit} className="card p-5 mb-6 space-y-4">
               <h3 className="font-semibold">{editingExpense ? t("edit") : t("add_new")}</h3>
               <div className="grid grid-cols-2 gap-4">
                 {user?.branch_id ? (
@@ -224,15 +226,15 @@ export default function ExpensesPage() {
                 </div>
               </div>
               <button type="submit"
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm">
+                className="btn btn-primary">
                 {t("save")}
               </button>
             </form>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b">
                 <tr>
                   <th className="px-4 py-3 text-left">{t("date")}</th>
                   <th className="px-4 py-3 text-left">{t("branch")}</th>
@@ -245,9 +247,9 @@ export default function ExpensesPage() {
               </thead>
               <tbody>
                 {expenses.length === 0 ? (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
                 ) : expenses.map(exp => (
-                  <tr key={exp.id} className="border-b hover:bg-gray-50">
+                  <tr key={exp.id} className="border-b hover:bg-emerald-50/40">
                     <td className="px-4 py-3">{exp.date}</td>
                     <td className="px-4 py-3">{branchName(exp.branch_id)}</td>
                     <td className="px-4 py-3">{catName(exp.category_id)}</td>
@@ -291,9 +293,9 @@ export default function ExpensesPage() {
       )}
 
       {showCatMgr && (
-        <div className="fixed inset-0 bg-black/40 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto"
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto"
           onClick={() => setShowCatMgr(false)}>
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto my-auto"
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto my-auto"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lg">{t("manage_categories")}</h3>
@@ -307,7 +309,7 @@ export default function ExpensesPage() {
                 placeholder={`${t("name")} (AR)`} dir="rtl" className="px-3 py-2 border rounded-lg text-sm" />
             </div>
             <button type="button" onClick={addCategory}
-              className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm mb-4">
+              className="btn btn-primary w-full mb-4">
               {t("add")}
             </button>
             <div className="border rounded-lg divide-y max-h-72 overflow-y-auto">

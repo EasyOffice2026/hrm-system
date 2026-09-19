@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiFetch } from "../contexts/api";
 import BrandManagementPage from "./BrandManagementPage";
@@ -378,7 +379,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">{t("settings")}</h2>
+      <div className="flex items-center gap-3 mb-6"><div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-700 items-center justify-center shrink-0"><Settings size={20} /></div><h2 className="page-title">{t("settings")}</h2></div>
 
       {/* Brand Management (owner only) */}
       {currentUser?.role === "owner" && (
@@ -389,14 +390,14 @@ export default function SettingsPage() {
 
       {/* Branch Management (owner, manager, accountant) */}
       {["owner", "manager", "accountant"].includes(currentUser?.role || "") && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border max-w-4xl mb-6">
+        <div className="card p-5 max-w-4xl mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold">{t("branch_management")}</h3>
               <p className="text-sm text-gray-500">{t("branch_management_desc")}</p>
             </div>
             <button onClick={() => { resetBranchForm(); setShowBranchForm(true); }}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+              className="btn btn-primary">
               + {t("add_branch")}
             </button>
           </div>
@@ -439,7 +440,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex gap-2">
                 <button type="submit"
-                  className="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+                  className="btn btn-primary">
                   {editingBranch ? t("save") : t("add_branch")}
                 </button>
                 <button type="button" onClick={resetBranchForm}
@@ -485,14 +486,14 @@ export default function SettingsPage() {
       )}
 
       {/* User Management */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border max-w-4xl mb-6">
+      <div className="card p-5 max-w-4xl mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold">{t("user_management")}</h3>
             <p className="text-sm text-gray-500">{t("user_management_desc")}</p>
           </div>
           <button onClick={() => { resetUserForm(); setShowUserForm(true); }}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+            className="btn btn-primary">
             + {t("add_user")}
           </button>
         </div>
@@ -574,7 +575,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex gap-2">
               <button type="submit"
-                className="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+                className="btn btn-primary">
                 {editingUser ? t("save") : t("add_user")}
               </button>
               <button type="button" onClick={resetUserForm}
@@ -645,7 +646,7 @@ export default function SettingsPage() {
 
       {/* User Permissions (owner only) */}
       {currentUser?.role === "owner" && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border max-w-5xl mb-6">
+        <div className="card p-5 max-w-5xl mb-6">
           <div className="mb-4">
             <h3 className="text-lg font-semibold">{t("user_permissions")}</h3>
             <p className="text-sm text-gray-500">{t("user_permissions_desc")}</p>
@@ -742,7 +743,7 @@ export default function SettingsPage() {
                 )}
 
                 <button onClick={() => savePerm(permEditing)} disabled={permSaving}
-                  className="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm disabled:opacity-50">
+                  className="btn btn-primary">
                   {permSaving ? "..." : t("save_permissions")}
                 </button>
               </div>
@@ -751,7 +752,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="bg-white p-6 rounded-xl shadow-sm border max-w-2xl">
+      <div className="card p-5 max-w-2xl">
         <h3 className="text-lg font-semibold mb-4">{t("email_settings")}</h3>
         <p className="text-sm text-gray-500 mb-4">{t("smtp_description")}</p>
 
@@ -808,7 +809,7 @@ export default function SettingsPage() {
 
           <div className="flex gap-3">
             <button type="submit" disabled={saving}
-              className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 text-sm">
+              className="btn btn-primary">
               {saving ? "..." : t("save")}
             </button>
             <button type="button" onClick={handleTest} disabled={testing || !hasPassword}

@@ -126,7 +126,7 @@ export default function BrandSelectPage({ onSelect }: { onSelect: () => void }) 
         {user?.role === "owner" && (
           <div className="mt-6 text-center">
             <button onClick={() => { setShowAdd(true); setEditBrand(null); setNameEn(""); setNameAr(""); }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition">
+              className="btn btn-primary">
               <Plus size={18} /> {t("add_brand")}
             </button>
           </div>
@@ -134,9 +134,9 @@ export default function BrandSelectPage({ onSelect }: { onSelect: () => void }) 
 
         {/* Add/Edit modal */}
         {showAdd && (
-          <div className="fixed inset-0 bg-black/40 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
+          <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
             onClick={() => setShowAdd(false)}>
-            <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
               <h3 className="text-lg font-semibold mb-4">
                 {editBrand ? t("edit_brand") : t("add_brand")}
               </h3>
@@ -154,7 +154,7 @@ export default function BrandSelectPage({ onSelect }: { onSelect: () => void }) 
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSave}
-                  className="flex-1 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">{t("save")}</button>
+                  className="btn btn-primary flex-1">{t("save")}</button>
                 <button onClick={() => setShowAdd(false)}
                   className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t("cancel")}</button>
               </div>

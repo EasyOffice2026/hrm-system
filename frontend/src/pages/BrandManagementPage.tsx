@@ -1,9 +1,10 @@
+import { toastError } from "../components/toastStore";
 import { useTranslation } from "react-i18next";
 import { useBrand } from "../contexts/BrandContext";
 import type { BrandInfo } from "../contexts/BrandContext";
 import { useState } from "react";
 import { apiPost, apiFetch } from "../contexts/api";
-import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Building2 } from "lucide-react";
 
 export default function BrandManagementPage() {
   const { t } = useTranslation();
@@ -57,11 +58,11 @@ export default function BrandManagementPage() {
       const res = await apiFetch(`/api/hr/brands/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
-        alert(data.detail || "Cannot delete");
+        toastError(data.detail || "Cannot delete");
         return;
       }
     } catch {
-      alert("Error deleting brand");
+      toastError("Error deleting brand");
       return;
     }
     await refreshBrands();
@@ -70,9 +71,9 @@ export default function BrandManagementPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">{t("brand_management")}</h2>
+        <div className="flex items-center gap-3"><div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-700 items-center justify-center shrink-0"><Building2 size={20} /></div><h2 className="page-title">{t("brand_management")}</h2></div>
         <button onClick={startAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+          className="btn btn-primary">
           <Plus size={18} /> {t("add_brand")}
         </button>
       </div>
@@ -90,7 +91,7 @@ export default function BrandManagementPage() {
           </thead>
           <tbody>
             {brands.map((b) => (
-              <tr key={b.id} className="border-t hover:bg-gray-50">
+              <tr key={b.id} className="border-t hover:bg-emerald-50/40">
                 {editing === b.id ? (
                   <>
                     <td className="px-4 py-2">{b.id}</td>
@@ -124,7 +125,7 @@ export default function BrandManagementPage() {
                     <td className="px-4 py-3 font-medium">{b.name_en}</td>
                     <td className="px-4 py-3" dir="rtl">{b.name_ar || "—"}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium font-medium
                         ${b.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                         {t(b.status)}
                       </span>

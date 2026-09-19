@@ -1,3 +1,5 @@
+import { toastError } from "../components/toastStore";
+import { HandCoins } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiFetch } from "../contexts/api";
@@ -160,7 +162,7 @@ export default function EosPage() {
     const res = act === "delete"
       ? await apiFetch(`/api/eos/${s.id}`, { method: "DELETE" })
       : await jsonReq(`/api/eos/${s.id}/${act}`, "POST");
-    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || "Error"); return; }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); toastError(d.detail || "Error"); return; }
     setViewing(null);
     load();
   };
@@ -222,7 +224,7 @@ export default function EosPage() {
     <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">{t("eos")}</h2>
+          <div className="flex items-center gap-3"><div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-700 items-center justify-center shrink-0"><HandCoins size={20} /></div><h2 className="page-title">{t("eos")}</h2></div>
           <p className="text-xs text-gray-500">{t("eos_law_note")}</p>
         </div>
         <div className="flex gap-2 items-center">
@@ -232,7 +234,7 @@ export default function EosPage() {
           </select>
           {canEdit && (
             <button onClick={() => { setShowForm(!showForm); setEditing(null); setForm(emptyForm()); setCalc(null); setMsg(""); }}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">
+              className="btn btn-primary">
               {showForm ? t("cancel") : t("new_settlement")}
             </button>
           )}
@@ -240,7 +242,7 @@ export default function EosPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6 space-y-4">
+        <div className="card p-6 mb-6 space-y-4">
           <h3 className="font-semibold">{editing ? `${t("edit")} ${editing.ref_no}` : t("new_settlement")}</h3>
           {msg && <div className="p-2 bg-red-50 text-red-700 text-sm rounded">{msg}</div>}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -304,15 +306,15 @@ export default function EosPage() {
             <button type="button" onClick={doCalc} disabled={busy}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">{t("calculate")}</button>
             <button type="button" onClick={doSave} disabled={busy}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50">{t("save")}</button>
+              className="btn btn-primary">{t("save")}</button>
           </div>
           {calc && breakdown(calc)}
         </div>
       )}
 
       {viewing && (
-        <div className="fixed inset-0 bg-black/40 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setViewing(null)}>
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 my-auto max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setViewing(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 my-auto max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="font-semibold text-lg">{viewing.ref_no} — {isAr && viewing.employee_name_ar ? viewing.employee_name_ar : viewing.employee_name}</h3>
@@ -326,7 +328,7 @@ export default function EosPage() {
               <div className="flex gap-2 mt-4 flex-wrap">
                 {viewing.status === "draft" && <>
                   <button onClick={() => startEdit(viewing)} className="px-3 py-1.5 bg-blue-500 text-white rounded text-xs">{t("edit")}</button>
-                  <button onClick={() => action(viewing, "approve")} className="px-3 py-1.5 bg-emerald-600 text-white rounded text-xs">{t("approve")}</button>
+                  <button onClick={() => action(viewing, "approve")} className="btn btn-primary text-xs">{t("approve")}</button>
                   <button onClick={() => action(viewing, "delete")} className="px-3 py-1.5 bg-red-500 text-white rounded text-xs">{t("delete")}</button>
                 </>}
                 {viewing.status === "approved" && <>
@@ -340,9 +342,9 @@ export default function EosPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm min-w-[800px]">
-          <thead className="bg-gray-50 border-b">
+          <thead className="border-b">
             <tr>
               <th className="px-4 py-3 text-left">{t("reference")}</th>
               <th className="px-4 py-3 text-left">{t("employee")}</th>
@@ -357,7 +359,7 @@ export default function EosPage() {
           </thead>
           <tbody>
             {settlements.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+              <tr><td colSpan={9} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
             ) : settlements.map(s => (
               <tr key={s.id} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => setViewing(s)}>
                 <td className="px-4 py-3 font-mono text-xs">{s.ref_no}</td>

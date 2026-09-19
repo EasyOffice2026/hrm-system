@@ -1,3 +1,4 @@
+import { toastError } from "../components/toastStore";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiPost, apiFetch, apiDownload } from "../contexts/api";
@@ -230,7 +231,7 @@ export default function HRPage({ mode = "hr" }: { mode?: "hr" | "payroll" }) {
       if (tab === "leaves") apiGet("/api/hr/leaves").then(setLeaveRecords);
     } else {
       const d = await res.json();
-      alert(d.detail || "Error");
+      toastError(d.detail || "Error");
     }
   };
 
@@ -269,16 +270,16 @@ export default function HRPage({ mode = "hr" }: { mode?: "hr" | "payroll" }) {
     try {
       if (editingEmp) {
         const res = await apiFetch(`/api/hr/employees/${editingEmp.id}`, { method: "PUT", body: fd });
-        if (!res.ok) { const d = await res.json(); alert(d.detail || "Error"); return; }
+        if (!res.ok) { const d = await res.json(); toastError(d.detail || "Error"); return; }
       } else {
         const res = await apiFetch("/api/hr/employees", { method: "POST", body: fd });
-        if (!res.ok) { const d = await res.json(); alert(d.detail || "Error"); return; }
+        if (!res.ok) { const d = await res.json(); toastError(d.detail || "Error"); return; }
       }
       setShowForm(false);
       setEditingEmp(null);
       loadEmployees();
       loadEmployers();
-    } catch (err: unknown) { alert((err as Error).message); }
+    } catch (err: unknown) { toastError((err as Error).message); }
   };
 
   const startEditEmp = (emp: Employee) => {
@@ -292,7 +293,7 @@ export default function HRPage({ mode = "hr" }: { mode?: "hr" | "payroll" }) {
       const res = await apiFetch(`/api/hr/employees/${emp.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Error");
       loadEmployees();
-    } catch (err: unknown) { alert((err as Error).message); }
+    } catch (err: unknown) { toastError((err as Error).message); }
   };
 
   const branchName = (id: number) => { const b = allBranches.find(x => x.id === id) || branches.find(x => x.id === id); return b ? (i18n.language === "ar" ? (b.name_ar || b.name) : b.name) : ""; };
@@ -921,7 +922,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
           return (
             <button key={tb} onClick={() => setTab(tb)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                tab === tb ? "bg-white shadow text-emerald-700" : "text-gray-600 hover:text-gray-800"
+                tab === tb ? "bg-white shadow-sm text-emerald-700" : "text-gray-600 hover:text-gray-800"
               }`}>{t(label)}</button>
           );
         })}
@@ -931,7 +932,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
       {tab === "employees" && (
         <>
           {showForm && (
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border mb-6 space-y-4">
+            <form onSubmit={handleSubmit} className="card p-5 mb-6 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {editingEmp && (
                 <div>
@@ -1031,7 +1032,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                 </div>
               </div>
               <button type="submit"
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm">
+                className="btn btn-primary">
                 {t("save")}
               </button>
             </form>
@@ -1142,8 +1143,8 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
 
       {/* Employer Manager Modal */}
       {showEmployerMgr && (
-        <div className="fixed inset-0 bg-black/40 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setShowEmployerMgr(false)}>
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto my-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setShowEmployerMgr(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto my-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lg">{t("employer_label")}</h3>
               <button onClick={() => setShowEmployerMgr(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
@@ -1160,10 +1161,10 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
               fd.append("name", newEmployerName.trim());
               fd.append("name_ar", newEmployerNameAr.trim());
               const res = await apiFetch("/api/hr/employers", { method: "POST", body: fd });
-              if (!res.ok) { const d = await res.json(); alert(d.detail || "Error"); return; }
+              if (!res.ok) { const d = await res.json(); toastError(d.detail || "Error"); return; }
               setNewEmployerName(""); setNewEmployerNameAr("");
               loadEmployers();
-            }} className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm mb-4">
+            }} className="btn btn-primary w-full mb-4">
               {t("add")}
             </button>
             <div className="border rounded-lg divide-y max-h-72 overflow-y-auto">
@@ -1197,7 +1198,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
             {isManager && (
               <>
                 <button onClick={handleGeneratePayroll}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm mt-5">
+                  className="btn btn-primary mt-5">
                   {t("generate_payroll")}
                 </button>
                 <button onClick={() => apiDownload(`/api/export/salary/csv?month=${salaryMonth}&lang=${i18n.language}`, `salary_${salaryMonth}.csv`)}
@@ -1480,7 +1481,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
 
               <div className="flex gap-2">
                 <button onClick={handleSaveSalary}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+                  className="btn btn-primary">
                   {t("save")}
                 </button>
                 <button onClick={() => setEditingRecord(null)}
@@ -1498,9 +1499,9 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
           </div>
 
           {/* Salary Summary Table */}
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b">
                 <tr>
                   <th className="px-3 py-3 text-left">{t("staff_no")}</th>
                   <th className="px-3 py-3 text-left">{t("name")}</th>
@@ -1517,7 +1518,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
               </thead>
               <tbody>
                 {salaryRecords.length === 0 ? (
-                  <tr><td colSpan={isManager ? 11 : 10} className="px-4 py-8 text-center text-gray-400">
+                  <tr><td colSpan={isManager ? 11 : 10} className="px-4 py-10 text-center text-gray-400">
                     {t("no_data")} — {t("generate_payroll")}
                   </td></tr>
                 ) : salaryRecords.filter(inEmpBranchFilter).filter(r => {
@@ -1529,7 +1530,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                   const totalAllowances = r.allowances + r.overtime + r.bonus + r.incentive + r.leave_salary + r.ticket_payment;
                   const totalDeductions = r.deductions + r.advance + r.loan_deduction + r.penalty;
                   return (
-                    <tr key={r.id} className="border-b hover:bg-gray-50">
+                    <tr key={r.id} className="border-b hover:bg-emerald-50/40">
                       <td className="px-3 py-3">{r.staff_no || empStaffNo(r.employee_id) || "—"}</td>
                       <td className="px-3 py-3 font-medium">{r.name_ar || r.name || empName(r.employee_id)}</td>
                       <td className="px-3 py-3">{r.designation || "—"}</td>
@@ -1587,7 +1588,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
 
           {/* Pay Slip Modal */}
           {showPayslip && payslipData && (
-            <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto">
               <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 my-auto">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-bold">{t("pay_slip")} — {payslipData.employee?.name}</h3>
@@ -1670,12 +1671,12 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
       {tab === "transfers" && (
         <div>
           <button onClick={() => setShowTransferForm(!showTransferForm)}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm mb-4">
+            className="btn btn-primary mb-4">
             {showTransferForm ? t("cancel") : (isManager ? t("new_transfer") : t("request_transfer"))}
           </button>
 
           {showTransferForm && (
-            <form onSubmit={handleTransferSubmit} className="bg-white p-6 rounded-xl shadow-sm border mb-6 space-y-4">
+            <form onSubmit={handleTransferSubmit} className="card p-5 mb-6 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t("employee")}</label>
@@ -1718,15 +1719,15 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                 <textarea name="notes" className="w-full px-3 py-2 border rounded-lg text-sm" rows={2} />
               </div>
               <button type="submit"
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+                className="btn btn-primary">
                 {t("submit_transfer")}
               </button>
             </form>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b">
                 <tr>
                   <th className="px-4 py-3 text-left">{t("staff_no")}</th>
                   <th className="px-4 py-3 text-left">{t("employee")}</th>
@@ -1739,9 +1740,9 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
               </thead>
               <tbody>
                 {transfers.length === 0 ? (
-                  <tr><td colSpan={isManager ? 7 : 6} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+                  <tr><td colSpan={isManager ? 7 : 6} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
                 ) : transfers.filter(inEmpBranchFilter).map(tr => (
-                  <tr key={tr.id} className="border-b hover:bg-gray-50">
+                  <tr key={tr.id} className="border-b hover:bg-emerald-50/40">
                     <td className="px-4 py-3">{empStaffNo(tr.employee_id) || "—"}</td>
                     <td className="px-4 py-3">{empName(tr.employee_id)}</td>
                     <td className="px-4 py-3">{branchName(tr.from_branch_id)}</td>
@@ -1779,13 +1780,13 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
         <div>
           {isManager && (
             <button onClick={() => { setShowLoanForm(!showLoanForm); setEditingLoan(null); }}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm mb-4">
+              className="btn btn-primary mb-4">
               {showLoanForm ? t("cancel") : t("add_new")}
             </button>
           )}
 
           {showLoanForm && (
-            <form onSubmit={handleLoanSubmit} className="bg-white p-6 rounded-xl shadow-sm border mb-6 space-y-4">
+            <form onSubmit={handleLoanSubmit} className="card p-5 mb-6 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t("employee")}</label>
@@ -1830,15 +1831,15 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                 <textarea name="notes" defaultValue={editingLoan?.notes || ""} className="w-full px-3 py-2 border rounded-lg text-sm" rows={2} />
               </div>
               <button type="submit"
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+                className="btn btn-primary">
                 {editingLoan ? t("update") : t("save")}
               </button>
             </form>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b">
                 <tr>
                   <th className="px-4 py-3 text-left">{t("staff_no")}</th>
                   <th className="px-4 py-3 text-left">{t("employee")}</th>
@@ -1854,11 +1855,11 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
               </thead>
               <tbody>
                 {loans.length === 0 ? (
-                  <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+                  <tr><td colSpan={10} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
                 ) : loans.filter(inEmpBranchFilter).map(l => {
                   const paid = Math.max(0, l.amount - l.balance);
                   return (
-                  <tr key={l.id} className="border-b hover:bg-gray-50">
+                  <tr key={l.id} className="border-b hover:bg-emerald-50/40">
                     <td className="px-4 py-3">{empStaffNo(l.employee_id) || "—"}</td>
                     <td className="px-4 py-3">{empName(l.employee_id)}</td>
                     <td className="px-4 py-3">{t(l.loan_type === "loan" ? "loan_label" : "advance")}</td>
@@ -1894,7 +1895,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
           </div>
 
           {/* Transaction statement — pick any staff with advances/loans */}
-          <div className="bg-white rounded-xl shadow-sm border mt-6 p-5">
+          <div className="card mt-6 p-5">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
               <label className="text-sm font-semibold">{t("loan_statement")}</label>
               <select value={statementEmpId}
@@ -1930,7 +1931,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b">
+                    <thead className="border-b">
                       <tr>
                         <th className="px-3 py-2 text-left">{t("date")}</th>
                         <th className="px-3 py-2 text-left">{t("type")}</th>
@@ -1978,7 +1979,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
           </div>
 
           {payingLoan && (
-            <div className="fixed inset-0 bg-black/40 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto">
               <form onSubmit={handleRepaymentSubmit} className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto my-auto">
                 <h3 className="font-semibold">{t("record_payment")} — {empName(payingLoan.employee_id)}</h3>
                 <div className="text-xs text-gray-500">
@@ -2010,7 +2011,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                   <button type="button" onClick={() => setPayingLoan(null)}
                     className="px-4 py-2 bg-gray-200 rounded-lg text-sm">{t("cancel")}</button>
                   <button type="submit"
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm">{t("save")}</button>
+                    className="btn btn-primary">{t("save")}</button>
                 </div>
               </form>
             </div>
@@ -2022,12 +2023,12 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
       {tab === "benefits" && (
         <div>
           <button onClick={() => { setShowBenefitForm(!showBenefitForm); setEditingBenefit(null); setBenefitFreq("one_time"); }}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm mb-4">
+            className="btn btn-primary mb-4">
             {showBenefitForm ? t("cancel") : (isManager ? t("add_new") : t("request_new"))}
           </button>
 
           {showBenefitForm && (
-            <form onSubmit={handleBenefitSubmit} className="bg-white p-6 rounded-xl shadow-sm border mb-6 space-y-4">
+            <form onSubmit={handleBenefitSubmit} className="card p-5 mb-6 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t("employee")}</label>
@@ -2079,15 +2080,15 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                 <textarea name="notes" defaultValue={editingBenefit?.notes || ""} className="w-full px-3 py-2 border rounded-lg text-sm" rows={2} />
               </div>
               <button type="submit"
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+                className="btn btn-primary">
                 {editingBenefit ? t("update") : t("save")}
               </button>
             </form>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b">
                 <tr>
                   <th className="px-4 py-3 text-left">{t("staff_no")}</th>
                   <th className="px-4 py-3 text-left">{t("employee")}</th>
@@ -2102,9 +2103,9 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
               </thead>
               <tbody>
                 {benefits.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
                 ) : benefits.filter(inEmpBranchFilter).map(b => (
-                  <tr key={b.id} className="border-b hover:bg-gray-50">
+                  <tr key={b.id} className="border-b hover:bg-emerald-50/40">
                     <td className="px-4 py-3">{empStaffNo(b.employee_id) || "—"}</td>
                     <td className="px-4 py-3">{empName(b.employee_id)}</td>
                     <td className="px-4 py-3">
@@ -2148,7 +2149,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
         <div>
           {isManager && (
             <button onClick={() => { setShowDeductionForm(!showDeductionForm); setEditingDeduction(null); setDedSelectedEmpId(null); setDedDays(0); setDedAmount(0); }}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm mb-4">
+              className="btn btn-primary mb-4">
               {showDeductionForm ? t("cancel") : t("add_new")}
             </button>
           )}
@@ -2158,7 +2159,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
             const dedSalary = dedEmp?.actual_salary || 0;
             const dedDailyRate = dedSalary / 30;
             return (
-            <form onSubmit={handleDeductionSubmit} className="bg-white p-6 rounded-xl shadow-sm border mb-6 space-y-4">
+            <form onSubmit={handleDeductionSubmit} className="card p-5 mb-6 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t("employee")}</label>
@@ -2228,9 +2229,9 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
             );
           })()}
 
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b">
                 <tr>
                   <th className="px-4 py-3 text-left">{t("staff_no")}</th>
                   <th className="px-4 py-3 text-left">{t("employee")}</th>
@@ -2245,9 +2246,9 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
               </thead>
               <tbody>
                 {deductionItems.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
                 ) : deductionItems.filter(inEmpBranchFilter).map(d => (
-                  <tr key={d.id} className="border-b hover:bg-gray-50">
+                  <tr key={d.id} className="border-b hover:bg-emerald-50/40">
                     <td className="px-4 py-3">{empStaffNo(d.employee_id) || "—"}</td>
                     <td className="px-4 py-3">{empName(d.employee_id)}</td>
                     <td className="px-4 py-3">
@@ -2282,7 +2283,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
       {tab === "leaves" && (
         <div>
           <button onClick={() => { setShowLeaveForm(!showLeaveForm); setEditingLeave(null); }}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm mb-4">
+            className="btn btn-primary mb-4">
             {showLeaveForm ? t("cancel") : (isManager ? t("add_leave") : t("request_leave"))}
           </button>
 
@@ -2372,7 +2373,7 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
                     : lr.leave_type === "annual_leave" ? "bg-blue-100 text-blue-700"
                     : "bg-red-100 text-red-700";
                   return (
-                    <tr key={lr.id} className="border-b hover:bg-gray-50">
+                    <tr key={lr.id} className="border-b hover:bg-emerald-50/40">
                       <td className="px-4 py-3">{empStaff?.staff_no || "—"}</td>
                       <td className="px-4 py-3" dir="rtl">{empStaff?.name_ar || empStaff?.name || "—"}</td>
                       <td className="px-4 py-3">

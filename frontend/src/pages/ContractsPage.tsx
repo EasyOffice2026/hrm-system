@@ -1,3 +1,5 @@
+import { toastError } from "../components/toastStore";
+import { FileText } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiFetch, apiPost, apiDownload } from "../contexts/api";
@@ -111,7 +113,7 @@ export default function ContractsPage() {
             await apiFetch(`/api/hr/contract-payments/${payingPayment.id}`, { method: "PUT", body: fd });
             setPayingPayment(null);
             loadPayments(c.id);
-          } catch (err: unknown) { alert((err as Error).message); }
+          } catch (err: unknown) { toastError((err as Error).message); }
         }} className="bg-emerald-50 border border-emerald-200 p-4 rounded grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="col-span-2 md:col-span-5 text-sm font-medium">
             {t("mark_paid")}: {payingPayment.due_date} — KD {payingPayment.amount.toFixed(3)}
@@ -141,7 +143,7 @@ export default function ContractsPage() {
               className="w-full border rounded px-2 py-1.5 text-sm" />
           </div>
           <div className="flex items-end gap-2">
-            <button type="submit" className="px-4 py-1.5 bg-emerald-600 text-white rounded text-sm">{t("save")}</button>
+            <button type="submit" className="btn btn-primary">{t("save")}</button>
             <button type="button" onClick={() => setPayingPayment(null)}
               className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm">{t("cancel")}</button>
           </div>
@@ -182,7 +184,7 @@ export default function ContractsPage() {
             await apiFetch(`/api/hr/contracts/${c.id}/payments`, { method: "POST", body: fd });
             setShowPaymentForm(false);
             loadPayments(c.id);
-          } catch (err: unknown) { alert((err as Error).message); }
+          } catch (err: unknown) { toastError((err as Error).message); }
         }} className="bg-white p-4 rounded border grid grid-cols-2 md:grid-cols-6 gap-3">
           <div>
             <label className="block text-xs mb-1">{t("due_date")}</label>
@@ -212,7 +214,7 @@ export default function ContractsPage() {
             </select>
           </div>
           <div className="flex items-end">
-            <button type="submit" className="px-4 py-1.5 bg-emerald-600 text-white rounded text-sm">{t("save")}</button>
+            <button type="submit" className="btn btn-primary">{t("save")}</button>
           </div>
         </form>
       )}
@@ -286,7 +288,7 @@ export default function ContractsPage() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800">{t("contracts_tab")}</h1>
+        <div className="flex items-center gap-3"><div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-700 items-center justify-center shrink-0"><FileText size={20} /></div><h1 className="page-title">{t("contracts_tab")}</h1></div>
         <div className="flex gap-2">
           {tab === "contracts" && (
             <>
@@ -298,7 +300,7 @@ export default function ContractsPage() {
           )}
           {isManager && tab === "contracts" && (
             <button onClick={() => { setShowForm(!showForm); setEditing(null); }}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+              className="btn btn-primary">
               {showForm ? t("cancel") : t("add_contract")}
             </button>
           )}
@@ -306,11 +308,11 @@ export default function ContractsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-4 bg-gray-100/80 p-1 rounded-xl w-fit flex-wrap">
         {(["contracts", "ledger", "reminders"] as const).map(tb => (
           <button key={tb} onClick={() => { setTab(tb); setPayments([]); setLedgerContractId(null); setShowPaymentForm(false); if (tb === "reminders") apiGet("/api/hr/contract-reminders").then(setReminders); }}
             className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-              tab === tb ? "bg-white shadow text-emerald-700" : "text-gray-500 hover:text-gray-700"
+              tab === tb ? "bg-white shadow-sm text-emerald-700" : "text-gray-500 hover:text-gray-700"
             }`}>
             {tb === "contracts" ? t("contracts_tab") : tb === "ledger" ? t("payment_ledger") : t("payment_reminders")}
             {tb === "reminders" && reminders.some(r => r.days_remaining <= 7) && (
@@ -322,9 +324,9 @@ export default function ContractsPage() {
 
       {/* ===== REMINDERS TAB ===== */}
       {tab === "reminders" && (
-        <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+        <div className="card overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="border-b">
               <tr>
                 <th className="px-3 py-3 text-left">{t("contract_name")}</th>
                 <th className="px-3 py-3 text-left">{t("contract_type")}</th>
@@ -371,7 +373,7 @@ export default function ContractsPage() {
       {/* ===== LEDGER TAB ===== */}
       {tab === "ledger" && (
         <div className="space-y-4">
-          <div className="bg-white p-4 rounded-xl shadow-sm border">
+          <div className="card p-4">
             <label className="block text-sm font-medium mb-1">{t("search_contract")}</label>
             <input type="text" value={ledgerSearch} onChange={e => setLedgerSearch(e.target.value)}
               placeholder={t("search_contract")} className="w-full px-3 py-2 border rounded-lg text-sm" />
@@ -389,7 +391,7 @@ export default function ContractsPage() {
             )}
           </div>
           {ledgerContract ? (
-            <div className="bg-white p-4 rounded-xl shadow-sm border">
+            <div className="card p-4">
               {renderPaymentSection(ledgerContract)}
             </div>
           ) : (
@@ -420,8 +422,8 @@ export default function ContractsPage() {
             setShowForm(false);
             setEditing(null);
             apiGet("/api/hr/contracts").then(setContracts);
-          } catch (err: unknown) { alert((err as Error).message); }
-        }} className="bg-white p-6 rounded-xl shadow-sm border mb-6 space-y-4">
+          } catch (err: unknown) { toastError((err as Error).message); }
+        }} className="card p-5 mb-6 space-y-4">
           <h3 className="font-semibold text-lg">{editing ? t("edit_contract") : t("add_contract")}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
@@ -497,16 +499,16 @@ export default function ContractsPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm">{t("save")}</button>
+            <button type="submit" className="btn btn-primary">{t("save")}</button>
             {editing && <button type="button" onClick={() => setEditing(null)} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">{t("cancel")}</button>}
           </div>
         </form>
       )}
 
       {/* Contracts Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="border-b">
             <tr>
               <th className="px-3 py-3 text-left">{t("contract_name")}</th>
               <th className="px-3 py-3 text-left">{t("contract_type")}</th>
@@ -519,10 +521,10 @@ export default function ContractsPage() {
           </thead>
           <tbody>
             {contracts.length === 0 ? (
-              <tr><td colSpan={isManager ? 7 : 6} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+              <tr><td colSpan={isManager ? 7 : 6} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
             ) : contracts.map(c => (
               <React.Fragment key={c.id}>
-              <tr className="border-b hover:bg-gray-50">
+              <tr className="border-b hover:bg-emerald-50/40">
                 <td className="px-3 py-3 font-medium">{c.name}</td>
                 <td className="px-3 py-3">{c.kind ? (CONTRACT_TYPE_KEYS[c.kind] ? t(CONTRACT_TYPE_KEYS[c.kind]) : c.kind) : "—"}</td>
                 <td className="px-3 py-3">{branchName(c.branch_id)}</td>

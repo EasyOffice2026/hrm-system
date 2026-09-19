@@ -10,6 +10,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import Logo from "./Logo";
 import { Avatar } from "./ui";
+import { Toaster } from "./toast";
 
 const PERSONNEL_NAV = ["dashboard", "hr", "attendance", "renewals", "eos", "cash_management", "expenses"];
 
@@ -291,6 +292,7 @@ export default function Layout() {
             <Outlet key={selectedBrand?.id ?? (isGroupView ? "group" : "all")} />
           </div>
         </main>
+        <Toaster />
       </div>
     </div>
   );

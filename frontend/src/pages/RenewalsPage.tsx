@@ -1,6 +1,7 @@
+import { toastError } from "../components/toastStore";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Printer, FileSpreadsheet, FileText, Paperclip, Pencil, Trash2, Search, User as UserIcon, Building2, X } from "lucide-react";
+import { Plus, Printer, FileSpreadsheet, FileText, Paperclip, Pencil, Trash2, Search, User as UserIcon, Building2, X, IdCard } from "lucide-react";
 import { apiGet, apiPost, apiPut, apiDelete, apiFetch, apiDownload } from "../contexts/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useBrand } from "../contexts/BrandContext";
@@ -225,7 +226,7 @@ export default function RenewalsPage() {
   const isNewEmp = rf.group === "staff" && empMode === "new" && !editReq;
   const saveReq = async (submit: boolean) => {
     if (!brandId) return;
-    if (isNewEmp && !newEmp.name.trim()) { alert(t("rn_new_emp_required")); return; }
+    if (isNewEmp && !newEmp.name.trim()) { toastError(t("rn_new_emp_required")); return; }
     const body = {
       brand_id: brandId, group: rf.group,
       employee_id: rf.group === "staff" && !isNewEmp && rf.employee_id ? Number(rf.employee_id) : null,
@@ -237,11 +238,11 @@ export default function RenewalsPage() {
         new_expiry: l.new_expiry || null, new_doc_no: l.new_doc_no || null, qty: Number(l.qty) || 1, fee: Number(l.fee) || 0,
         extra_charges: Number(l.extra_charges) || 0, extra_desc: l.extra_desc || null })),
     };
-    if (!body.lines.length || (!body.employee_id && !body.license_id && !body.new_employee)) { alert(rf.group === "staff" ? t("rn_select_employee") : t("rn_select_license")); return; }
+    if (!body.lines.length || (!body.employee_id && !body.license_id && !body.new_employee)) { toastError(rf.group === "staff" ? t("rn_select_employee") : t("rn_select_license")); return; }
     const res = await apiFetch(editReq ? `/api/renewals/requests/${editReq.id}` : "/api/renewals/requests",
       { method: editReq ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
-    if (!res.ok) { alert(data.detail || "Error"); return; }
+    if (!res.ok) { toastError(data.detail || "Error"); return; }
     if (reqFiles.some(Boolean)) {
       const fd = new FormData();
       reqFiles.forEach((f, i) => { if (f) fd.append(`file${i + 1}`, f); });
@@ -256,7 +257,7 @@ export default function RenewalsPage() {
   const action = async (id: number, act: string, form?: FormData) => {
     const res = await apiFetch(`/api/renewals/requests/${id}/${act}`, { method: "POST", body: form || new FormData() });
     const data = await res.json();
-    if (!res.ok) { alert(data.detail || "Error"); return false; }
+    if (!res.ok) { toastError(data.detail || "Error"); return false; }
     await load(); if (detail?.id === id) openDetail(id); return true;
   };
   const promptAction = async (id: number, act: "return" | "reject" | "cancel", required: boolean) => {
@@ -308,7 +309,7 @@ export default function RenewalsPage() {
     fd.append("default_fee", String(typeForm.default_fee ?? 0)); fd.append("validity_months", String(typeForm.validity_months ?? 12));
     fd.append("reminder_days", String(typeForm.reminder_days ?? 60)); fd.append("is_active", String(typeForm.is_active ?? true));
     const r = typeForm.id ? await apiPut(`/api/renewals/types/${typeForm.id}`, fd) : await apiPost("/api/renewals/types", fd);
-    if (r.detail) { alert(r.detail); return; }
+    if (r.detail) { toastError(r.detail); return; }
     setTypeForm(null); load();
   };
 
@@ -326,7 +327,7 @@ export default function RenewalsPage() {
     if (licForm.id) fd.append("status", licForm.status || "active");
     licFiles.forEach((f, i) => { if (f) fd.append(`file${i + 1}`, f); });
     const r = licForm.id ? await apiPut(`/api/renewals/licenses/${licForm.id}`, fd) : await apiPost("/api/renewals/licenses", fd);
-    if (r.detail) { alert(r.detail); return; }
+    if (r.detail) { toastError(r.detail); return; }
     setLicForm(null); load();
   };
   const [docForm, setDocForm] = useState<Partial<Doc> | null>(null);
@@ -340,10 +341,10 @@ export default function RenewalsPage() {
     if (docForm.id) fd.append("status", docForm.status || "active");
     docFiles.forEach((f, i) => { if (f) fd.append(`file${i + 1}`, f); });
     const r = docForm.id ? await apiPut(`/api/renewals/documents/${docForm.id}`, fd) : await apiPost("/api/renewals/documents", fd);
-    if (r.detail) { alert(r.detail); return; }
+    if (r.detail) { toastError(r.detail); return; }
     setDocForm(null); load();
   };
-  const del = async (path: string) => { if (!confirm(t("rn_confirm_delete"))) return; const r = await apiDelete(path); if (r.detail && r.detail !== "ok" && !r.ok) { if (typeof r.detail === "string" && r.detail.toLowerCase().includes("not")) alert(r.detail); } load(); };
+  const del = async (path: string) => { if (!confirm(t("rn_confirm_delete"))) return; const r = await apiDelete(path); if (r.detail && r.detail !== "ok" && !r.ok) { if (typeof r.detail === "string" && r.detail.toLowerCase().includes("not")) toastError(r.detail); } load(); };
 
   const staffTypes = types.filter(x => x.group === "staff" && x.is_active);
   const companyTypes = types.filter(x => x.group === "company" && x.is_active);
@@ -385,7 +386,7 @@ export default function RenewalsPage() {
         <tbody>
           {rows.length === 0 && <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-400">{t("rn_no_data")}</td></tr>}
           {rows.map(r => (
-            <tr key={r.id} className="border-t hover:bg-gray-50">
+            <tr key={r.id} className="border-t hover:bg-emerald-50/40">
               <td className="px-3 py-2 font-mono text-xs">{r.request_no}</td>
               <td className="px-3 py-2">{r.requested_at.slice(0, 10)}</td>
               <td className="px-3 py-2">{r.group === "staff" ? t("rn_staff") : t("rn_company")}</td>
@@ -418,7 +419,7 @@ export default function RenewalsPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">{t("renewals")}</h1>
+        <div className="flex items-center gap-3"><div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-700 items-center justify-center shrink-0"><IdCard size={20} /></div><h1 className="page-title">{t("renewals")}</h1></div>
         <div className="flex items-center gap-2">
           {brands.length > 1 && !selectedBrand && (
             <select className={inp} value={brandId ?? ""} onChange={e => setBrandId(Number(e.target.value))}>
@@ -468,7 +469,7 @@ export default function RenewalsPage() {
               <tbody>
                 {filteredBoard.length === 0 && <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-400">{t("rn_no_data")}</td></tr>}
                 {filteredBoard.map(x => (
-                  <tr key={`${x.kind}-${x.ref_id}`} className="border-t hover:bg-gray-50">
+                  <tr key={`${x.kind}-${x.ref_id}`} className="border-t hover:bg-emerald-50/40">
                     <td className="px-3 py-2">{x.kind === "staff" ? t("rn_staff") : t("rn_company")}</td>
                     <td className="px-3 py-2">{x.name}</td>
                     <td className="px-3 py-2 font-mono text-xs">{x.id_no}</td>
@@ -526,7 +527,7 @@ export default function RenewalsPage() {
               <tbody>
                 {docs.length === 0 && <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-400">{t("rn_no_data")}</td></tr>}
                 {docs.map(d => (
-                  <tr key={d.id} className="border-t hover:bg-gray-50">
+                  <tr key={d.id} className="border-t hover:bg-emerald-50/40">
                     <td className="px-3 py-2">{ar && d.employee_name_ar ? d.employee_name_ar : d.employee_name}</td>
                     <td className="px-3 py-2 font-mono text-xs">{d.civil_id}</td>
                     <td className="px-3 py-2">{d.branch_name}</td>
@@ -563,7 +564,7 @@ export default function RenewalsPage() {
               <tbody>
                 {licenses.length === 0 && <tr><td colSpan={12} className="px-3 py-6 text-center text-gray-400">{t("rn_no_data")}</td></tr>}
                 {licenses.map(l => (
-                  <tr key={l.id} className="border-t hover:bg-gray-50">
+                  <tr key={l.id} className="border-t hover:bg-emerald-50/40">
                     <td className="px-3 py-2">{l.name}</td>
                     <td className="px-3 py-2">{l.employer || "—"}</td>
                     <td className="px-3 py-2 font-mono text-xs">{l.license_no}</td>
@@ -625,7 +626,7 @@ export default function RenewalsPage() {
 
       {/* ---------- Request form modal */}
       {showReq && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center overflow-y-auto p-4">
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] z-50 flex items-start justify-center overflow-y-auto p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl my-4 overflow-hidden">
             <div className="flex justify-between items-center px-5 py-3 bg-emerald-700 text-white">
               <div>
@@ -827,8 +828,8 @@ export default function RenewalsPage() {
 
       {/* ---------- Detail modal */}
       {detail && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center overflow-y-auto p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl p-5 space-y-4 my-4 text-sm">
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] z-50 flex items-start justify-center overflow-y-auto p-4">
+          <div className="card-xl w-full max-w-4xl p-5 space-y-4 my-4 text-sm">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold flex items-center gap-2">{detail.request_no} {statusBadge(detail)}</h2>
               <div className="flex gap-2">
@@ -885,8 +886,8 @@ export default function RenewalsPage() {
 
       {/* ---------- Approve modal */}
       {approveReq && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-5 space-y-3">
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] z-[60] flex items-center justify-center p-4">
+          <div className="card-xl w-full max-w-md p-5 space-y-3">
             <h2 className="font-bold">{t("rn_approve")} — {approveReq.request_no}</h2>
             <div className="text-sm">{approveReq.subject_name} · {approveReq.branch_name} · {t("rn_total")} KD {kd(approveReq.total)}</div>
             <div><label className="text-xs text-gray-600">{t("rn_approved_amount")}</label><input type="number" step="0.001" className={inp} value={apv.amount} onChange={e => setApv(a => ({ ...a, amount: e.target.value }))} /></div>
@@ -898,8 +899,8 @@ export default function RenewalsPage() {
 
       {/* ---------- Pay modal */}
       {payReq && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-start justify-center overflow-y-auto p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-5 space-y-3 my-4">
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] z-[60] flex items-start justify-center overflow-y-auto p-4">
+          <div className="card-xl w-full max-w-2xl p-5 space-y-3 my-4">
             <h2 className="font-bold">{t(payMode === "pay" ? "rn_pay" : "rn_complete")} — {payReq.request_no}</h2>
             <p className="text-xs text-gray-500">{t(payMode === "pay" ? "rn_pay_hint" : "rn_complete_hint")}</p>
             <div className="text-sm text-gray-600">{payReq.subject_name} · {payReq.branch_name} · {t("rn_approved_amount")} KD {kd(payReq.approved_amount ?? payReq.total)} · {t("rn_petty_cash")} KD {kd(summary?.petty_cash_balance)}</div>
@@ -939,8 +940,8 @@ export default function RenewalsPage() {
 
       {/* ---------- Type modal */}
       {typeForm && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-5 space-y-3">
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] z-[60] flex items-center justify-center p-4">
+          <div className="card-xl w-full max-w-md p-5 space-y-3">
             <h2 className="font-bold">{typeForm.id ? t("edit") : t("rn_add_type")}</h2>
             <div><label className="text-xs text-gray-600">{t("rn_group")}</label>
               <select className={inp} value={typeForm.group} disabled={!!typeForm.id} onChange={e => setTypeForm(f => ({ ...f, group: e.target.value }))}><option value="staff">{t("rn_staff")}</option><option value="company">{t("rn_company")}</option></select></div>
@@ -959,8 +960,8 @@ export default function RenewalsPage() {
 
       {/* ---------- License modal */}
       {licForm && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-start justify-center overflow-y-auto p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5 space-y-3 my-4">
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] z-[60] flex items-start justify-center overflow-y-auto p-4">
+          <div className="card-xl w-full max-w-lg p-5 space-y-3 my-4">
             <h2 className="font-bold">{licForm.id ? t("edit") : t("rn_add_license")}</h2>
             <div className="grid grid-cols-2 gap-2">
               <div className="col-span-2"><label className="text-xs text-gray-600">{t("employer_label")}</label>
@@ -987,8 +988,8 @@ export default function RenewalsPage() {
 
       {/* ---------- Document modal */}
       {docForm && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-start justify-center overflow-y-auto p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5 space-y-3 my-4">
+        <div className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px] z-[60] flex items-start justify-center overflow-y-auto p-4">
+          <div className="card-xl w-full max-w-lg p-5 space-y-3 my-4">
             <h2 className="font-bold">{docForm.id ? t("edit") : t("rn_add_document")}</h2>
             <div className="grid grid-cols-2 gap-2">
               <div className="col-span-2"><label className="text-xs text-gray-600">{t("rn_employee")}</label>

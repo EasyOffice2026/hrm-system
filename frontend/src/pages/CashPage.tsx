@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Banknote } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiFetch, apiDownload } from "../contexts/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -88,7 +89,7 @@ export default function CashPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-2xl font-bold text-gray-800">{t("cash_management")}</h2>
+        <div className="flex items-center gap-3"><div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-700 items-center justify-center shrink-0"><Banknote size={20} /></div><h2 className="page-title">{t("cash_management")}</h2></div>
         <div className="flex gap-2">
           <button onClick={() => exportData("csv")}
             className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">
@@ -144,7 +145,7 @@ export default function CashPage() {
       )}
 
       {tab === "summary" && summary && (
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="card p-6">
           <h3 className="font-semibold text-lg mb-4">
             {t("cash_sheet")} - {branchName(parseInt(branchId))} - {selectedDate}
           </h3>
@@ -209,13 +210,13 @@ export default function CashPage() {
         <div>
           <div className="mb-4">
             <button onClick={() => setShowTxnForm(!showTxnForm)}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">
+              className="btn btn-primary">
               {showTxnForm ? t("cancel") : t("add_transaction")}
             </button>
           </div>
 
           {showTxnForm && (
-            <form onSubmit={handleAddTxn} className="bg-white p-6 rounded-xl shadow-sm border mb-4 space-y-3">
+            <form onSubmit={handleAddTxn} className="card p-5 mb-4 space-y-3">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">{t("date")}</label>
@@ -254,15 +255,15 @@ export default function CashPage() {
                 </div>
               </div>
               <button type="submit"
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">
+                className="btn btn-primary">
                 {t("save")}
               </button>
             </form>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm min-w-[700px]">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b">
                 <tr>
                   <th className="px-4 py-3 text-left">{t("date")}</th>
                   <th className="px-4 py-3 text-left">{t("type")}</th>
@@ -275,7 +276,7 @@ export default function CashPage() {
               </thead>
               <tbody>
                 {transactions.length === 0 ? (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">{t("no_data")}</td></tr>
                 ) : transactions.map(txn => (
                   <tr key={txn.id} className={`border-b hover:bg-gray-50 ${txn.txn_type === "opening_balance" ? "bg-blue-50" : ""}`}>
                     <td className="px-4 py-3">{txn.date}</td>
