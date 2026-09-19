@@ -13,4 +13,11 @@ i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
+const applyDir = (lng: string) => {
+  document.documentElement.dir = lng === "ar" ? "rtl" : "ltr";
+  document.documentElement.lang = lng;
+};
+applyDir(i18n.language);
+i18n.on("languageChanged", applyDir);
+
 export default i18n;

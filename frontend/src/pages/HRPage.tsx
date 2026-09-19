@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiPost, apiFetch, apiDownload } from "../contexts/api";
 import { useBrand } from "../contexts/BrandContext";
+import { Avatar, Badge, EmptyState, type Tone } from "../components/ui";
+import { Users, Wallet, Download, FileSpreadsheet, FileText, X, Plus, Search, Pencil, Trash2 } from "lucide-react";
 
 interface Branch { id: number; name: string; name_ar?: string; }
 interface Employee {
@@ -301,6 +303,21 @@ export default function HRPage({ mode = "hr" }: { mode?: "hr" | "payroll" }) {
     !branchFilter || emp.branch_id === Number(branchFilter);
   const inEmpBranchFilter = (rec: { employee_id: number }) =>
     !branchFilter || employees.find(e => e.id === rec.employee_id)?.branch_id === Number(branchFilter);
+
+  const filteredEmployees = employees.filter(inBranchFilter).filter(emp => {
+    if (!empSearch) return true;
+    const q = empSearch.toLowerCase();
+    return (emp.name_ar || "").includes(q) || (emp.name || "").toLowerCase().includes(q) || (emp.staff_no || "").toLowerCase().includes(q) || (emp.civil_id || "").includes(q);
+  });
+
+  const [todayStr] = useState(() => new Date().toISOString().slice(0, 10));
+  const expiryStatus = (date: string | null | undefined): Tone => {
+    if (!date) return "gray";
+    const days = (new Date(date).getTime() - new Date(todayStr).getTime()) / 86400000;
+    if (days < 0) return "red";
+    if (days <= 30) return "amber";
+    return "green";
+  };
 
   const exportData = (fmt: string) => {
     const params = branchFilter ? `?branch_id=${branchFilter}` : "";
@@ -844,31 +861,36 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-        <h2 className="text-2xl font-bold text-gray-800">{t(mode === "payroll" ? "payroll" : "hr")}</h2>
-        <div className="flex gap-2">
-          <button onClick={() => exportData("csv")}
-            className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">
-            {t("export_csv")}
-          </button>
-          <button onClick={() => exportData("excel")}
-            className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
-            {t("export_excel")}
-          </button>
-          <button onClick={() => exportData("pdf")}
-            className="px-3 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700">
-            {t("export_pdf")}
-          </button>
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-700 items-center justify-center">
+            {mode === "payroll" ? <Wallet size={20} /> : <Users size={20} />}
+          </div>
+          <h2 className="page-title">{t(mode === "payroll" ? "payroll" : "hr")}</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-lg border bg-white shadow-sm overflow-hidden">
+            <button onClick={() => exportData("csv")} className="btn btn-ghost !rounded-none !px-3 !py-1.5 text-xs border-e">
+              <Download size={14} /> CSV
+            </button>
+            <button onClick={() => exportData("excel")} className="btn btn-ghost !rounded-none !px-3 !py-1.5 text-xs border-e">
+              <FileSpreadsheet size={14} /> Excel
+            </button>
+            <button onClick={() => exportData("pdf")} className="btn btn-ghost !rounded-none !px-3 !py-1.5 text-xs">
+              <FileText size={14} /> PDF
+            </button>
+          </div>
           {tab === "employees" && !isPersonnel && (
             <button onClick={() => { setShowForm(!showForm); setEditingEmp(null); }}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm">
+              className={`btn ${showForm ? "btn-secondary" : "btn-primary"}`}>
+              {showForm ? <X size={16} /> : <Plus size={16} />}
               {showForm ? t("cancel") : t("add_new")}
             </button>
           )}
         </div>
       </div>
 
-      {(isManager || isPersonnel) && (
+      {(isManager || isPersonnel) && tab !== "employees" && (
         <div className="mb-4">
           <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
             className="px-3 py-2 border rounded-lg text-sm">
@@ -882,15 +904,8 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
         </div>
       )}
 
-      {isManager && tab === "employees" && (
-        <label className="flex items-center gap-2 mb-4 text-sm text-gray-700 w-fit">
-          <input type="checkbox" checked={showLeft} onChange={e => setShowLeft(e.target.checked)} />
-          {t("show_left_staff")}
-        </label>
-      )}
-
       {/* Tabs */}
-      <div className={`flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit flex-wrap ${visibleTabs.length < 2 ? "hidden" : ""}`}>
+      <div className={`flex gap-1 mb-4 bg-gray-100/80 p-1 rounded-xl w-fit flex-wrap ${visibleTabs.length < 2 ? "hidden" : ""}`}>
         {visibleTabs.filter(tb => {
           if (currentUser.role === "owner") return true;
           const restrictedTabs: Tab[] = ["salary", "loans", "deductions"];
@@ -1022,60 +1037,105 @@ ${slip.advance > 0 ? `<div class="row"><span>Advance / سلفة</span><span clas
             </form>
           )}
 
-          <div className="mb-3">
-            <input type="text" placeholder={t("search") + "..."} value={empSearch} onChange={e => setEmpSearch(e.target.value)}
-              className="w-full md:w-72 px-3 py-2 border rounded-lg text-sm" dir="auto" />
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <div className="card overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center gap-3 p-3 border-b bg-white">
+              <div className="relative flex-1 max-w-sm">
+                <Search size={15} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input type="text" placeholder={t("search") + "..."} value={empSearch} onChange={e => setEmpSearch(e.target.value)}
+                  className="w-full ps-9 pe-3 py-2 border rounded-lg text-sm" dir="auto" />
+              </div>
+              {(isManager || isPersonnel) && (
+                <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-lg text-sm md:w-52">
+                  <option value="">{t("all_branches")}</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>
+                      {i18n.language === "ar" ? (b.name_ar || b.name) : b.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {isManager && (
+                <label className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
+                  <input type="checkbox" checked={showLeft} onChange={e => setShowLeft(e.target.checked)} />
+                  {t("show_left_staff")}
+                </label>
+              )}
+              <span className="md:ms-auto text-xs text-gray-500 whitespace-nowrap">
+                {filteredEmployees.length} / {employees.length} {t("employees").toLowerCase()}
+              </span>
+            </div>
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead>
                 <tr>
-                  <th className="px-3 py-3 text-left">{t("staff_no")}</th>
-                  <th className="px-3 py-3 text-left">{t("name")}</th>
-                  {isManager && <th className="px-3 py-3 text-left">{t("branch")}</th>}
-                  <th className="px-3 py-3 text-left">{t("position")}</th>
-                  <th className="px-3 py-3 text-left">{t("civil_id")}</th>
-                  {isManager && <th className="px-3 py-3 text-left">{t("phone")}</th>}
-                  <th className="px-3 py-3 text-left">{t("employer_label")}</th>
-                  <th className="px-3 py-3 text-left">{t("residency_expiry")}</th>
-                  <th className="px-3 py-3 text-center">{t("actions")}</th>
+                  <th className="px-4 py-3 text-start">{t("name")}</th>
+                  <th className="px-4 py-3 text-start">{t("staff_no")}</th>
+                  {isManager && <th className="px-4 py-3 text-start">{t("branch")}</th>}
+                  <th className="px-4 py-3 text-start">{t("position")}</th>
+                  <th className="px-4 py-3 text-start">{t("civil_id")}</th>
+                  {isManager && <th className="px-4 py-3 text-start">{t("phone")}</th>}
+                  <th className="px-4 py-3 text-start">{t("employer_label")}</th>
+                  <th className="px-4 py-3 text-start">{t("residency_expiry")}</th>
+                  <th className="px-4 py-3 text-end">{t("actions")}</th>
                 </tr>
               </thead>
-              <tbody>
-                {employees.length === 0 ? (
-                  <tr><td colSpan={isManager ? 9 : 7} className="px-4 py-8 text-center text-gray-400">{t("no_data")}</td></tr>
-                ) : employees.filter(inBranchFilter).filter(emp => {
-                  if (!empSearch) return true;
-                  const q = empSearch.toLowerCase();
-                  return (emp.name_ar || "").includes(q) || (emp.name || "").toLowerCase().includes(q) || (emp.staff_no || "").includes(q) || (emp.civil_id || "").includes(q);
-                }).map(emp => (
-                  <tr key={emp.id} className="border-b hover:bg-gray-50">
-                    <td className="px-3 py-3">{emp.staff_no || "—"}</td>
-                    <td className="px-3 py-3" dir="rtl">{emp.name_ar || emp.name}</td>
-                    {isManager && <td className="px-3 py-3">{branchName(emp.branch_id)}</td>}
-                    <td className="px-3 py-3">{emp.position}</td>
-                    <td className="px-3 py-3">{emp.civil_id}</td>
-                    {isManager && <td className="px-3 py-3">{emp.phone}</td>}
-                    <td className="px-3 py-3">{(() => {
+              <tbody className="divide-y">
+                {filteredEmployees.length === 0 ? (
+                  <tr><td colSpan={isManager ? 9 : 7}>
+                    <EmptyState icon={Users} title={t("no_data")} />
+                  </td></tr>
+                ) : filteredEmployees.map(emp => {
+                  const expiry = expiryStatus(emp.residency_expiry);
+                  return (
+                  <tr key={emp.id} className="hover:bg-gray-50/70">
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-3 min-w-[180px]">
+                        <Avatar name={emp.name || emp.name_ar || "?"} size={32} />
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 truncate" dir="auto">{i18n.language === "ar" ? (emp.name_ar || emp.name) : (emp.name || emp.name_ar)}</div>
+                          {emp.name_ar && emp.name && <div className="text-xs text-gray-400 truncate" dir="auto">{i18n.language === "ar" ? emp.name : emp.name_ar}</div>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-gray-600 tabular-nums">{emp.staff_no || "—"}</td>
+                    {isManager && <td className="px-4 py-2.5 text-gray-600">{branchName(emp.branch_id)}</td>}
+                    <td className="px-4 py-2.5">{emp.position}</td>
+                    <td className="px-4 py-2.5 text-gray-600 tabular-nums">{emp.civil_id}</td>
+                    {isManager && <td className="px-4 py-2.5 text-gray-600 tabular-nums" dir="ltr">{emp.phone}</td>}
+                    <td className="px-4 py-2.5 text-gray-600">{(() => {
                       if (!emp.employer) return "—";
                       const match = employers.find(e => e.name === emp.employer);
                       return i18n.language === "ar" && match?.name_ar ? match.name_ar : emp.employer;
                     })()}</td>
-                    <td className="px-3 py-3">{emp.residency_expiry || "—"}</td>
-                    <td className="px-3 py-3 text-center">
-                      <div className="flex gap-2 justify-center">
-                        {!isPersonnel && <button onClick={() => startEditEmp(emp)} className="text-blue-600 hover:underline text-xs">{t("edit")}</button>}
-                        <button onClick={() => printEmployeeForm(emp)} className="text-purple-600 hover:underline text-xs">PDF</button>
+                    <td className="px-4 py-2.5">
+                      {emp.residency_expiry
+                        ? <Badge tone={expiry} dot>{emp.residency_expiry}</Badge>
+                        : <span className="text-gray-400">—</span>}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex gap-1 justify-end">
+                        {!isPersonnel && (
+                          <button onClick={() => startEditEmp(emp)} title={t("edit")} className="p-1.5 rounded-md text-gray-500 hover:text-emerald-700 hover:bg-emerald-50">
+                            <Pencil size={15} />
+                          </button>
+                        )}
+                        <button onClick={() => printEmployeeForm(emp)} title="PDF" className="p-1.5 rounded-md text-gray-500 hover:text-purple-700 hover:bg-purple-50">
+                          <FileText size={15} />
+                        </button>
                         {isManager && (
-                          <button onClick={() => handleDeleteEmp(emp)} className="text-red-600 hover:underline text-xs">{t("delete")}</button>
+                          <button onClick={() => handleDeleteEmp(emp)} title={t("delete")} className="p-1.5 rounded-md text-gray-500 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 size={15} />
+                          </button>
                         )}
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       )}
