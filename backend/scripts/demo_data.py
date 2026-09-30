@@ -4,6 +4,9 @@
                                         # benefits/deductions, payroll, documents,
                                         # renewal requests, petty cash and one EOS settlement
     python -m scripts.demo_data purge   # remove everything the seed created
+    python -m scripts.demo_data isolate # move all demo rows into their own "Demo Company"
+                                        # brand (own Head Office / Administration / Personnel
+                                        # Office branches) so the production brand stays clean
 
 Every demo row is tagged (staff_no / reference / request_no / license_no prefixed
 with DEMO_TAG, notes containing DEMO_TAG) so purge only touches seeded data.
@@ -32,6 +35,10 @@ from app.utils.kuwait_eos import calculate
 DEMO_TAG = "DEMO"
 DEMO_BRANCH = "Salmiya Branch (Demo)"
 DEMO_BRANCH_AR = "فرع السالمية (تجريبي)"
+DEMO_COMPANY = "Demo Company"
+DEMO_COMPANY_AR = "شركة تجريبية"
+DEMO_HO = "Head Office (Demo)"
+DEMO_ADMIN = "Administration (Demo)"
 
 # name, name_ar, position, salary, join_date, branch ("ho" | "demo"), bank
 EMPLOYEES = [
@@ -323,7 +330,9 @@ def seed(db: Session):
 
 def purge(db: Session):
     emp_ids = [e.id for e in db.query(Employee.id).filter(Employee.staff_no.like(f"{DEMO_TAG}-%")).all()]
-    demo_branch_ids = [b.id for b in db.query(Branch.id).filter(Branch.name == DEMO_BRANCH).all()]
+    demo_brand_ids = [b.id for b in db.query(Brand.id).filter(Brand.name_en == DEMO_COMPANY).all()]
+    demo_branch_ids = [b.id for b in db.query(Branch.id).filter(
+        (Branch.name == DEMO_BRANCH) | (Branch.brand_id.in_(demo_brand_ids or [-1]))).all()]
 
     sp_ids = [r.id for r in db.query(SalaryPayment.id).filter(SalaryPayment.employee_id.in_(emp_ids))] if emp_ids else []
     rq_q = db.query(RenewalRequest).filter(
@@ -361,20 +370,91 @@ def purge(db: Session):
         n += _del(db.query(Employee).filter(Employee.id.in_(emp_ids)))
     if demo_branch_ids:
         n += _del(db.query(CashBalance).filter(CashBalance.branch_id.in_(demo_branch_ids)))
+        n += _del(db.query(CashTransaction).filter(CashTransaction.branch_id.in_(demo_branch_ids)))
+        n += _del(db.query(Expense).filter(Expense.branch_id.in_(demo_branch_ids)))
         n += _del(db.query(Branch).filter(Branch.id.in_(demo_branch_ids)))
+    if demo_brand_ids:
+        n += _del(db.query(Brand).filter(Brand.id.in_(demo_brand_ids)))
     db.commit()
     print(f"Purged {n} demo rows ({len(emp_ids)} employees).")
 
 
+def _get_or_create_branch(db: Session, brand_id: int, name: str, name_ar: str, head_office: bool) -> Branch:
+    b = db.query(Branch).filter(Branch.name == name).first()
+    if not b:
+        b = Branch(name=name, name_ar=name_ar, brand_id=brand_id, is_head_office=head_office, is_active=True)
+        db.add(b)
+        db.flush()
+    return b
+
+
+def isolate(db: Session):
+    emp_ids = [e.id for e in db.query(Employee.id).filter(Employee.staff_no.like(f"{DEMO_TAG}-%")).all()]
+    if not emp_ids:
+        print("No demo employees found.")
+        return
+
+    brand = db.query(Brand).filter(Brand.name_en == DEMO_COMPANY).first()
+    if not brand:
+        brand = Brand(name_en=DEMO_COMPANY, name_ar=DEMO_COMPANY_AR, status="active")
+        db.add(brand)
+        db.flush()
+    ho = _get_or_create_branch(db, brand.id, DEMO_HO, "المكتب الرئيسي (تجريبي)", True)
+    admin = _get_or_create_branch(db, brand.id, DEMO_ADMIN, "الإدارة (تجريبي)", False)
+    personnel = personnel_branch(db, brand.id)
+    salmiya = db.query(Branch).filter(Branch.name == DEMO_BRANCH).first()
+    if salmiya:
+        salmiya.brand_id = brand.id
+    demo_branch_ids = {b.id for b in (ho, admin, personnel, salmiya) if b}
+
+    # Old (production-brand) branches the demo rows currently sit on -> demo equivalents.
+    src_ho = db.query(Branch).filter(Branch.is_head_office == True, Branch.id.notin_(demo_branch_ids)).order_by(Branch.id).first()  # noqa: E712
+    src_admin = db.query(Branch).filter(Branch.name.like("Administration%"), Branch.id.notin_(demo_branch_ids)).order_by(Branch.id).first()
+    src_personnel = db.query(Branch).filter(Branch.name.like("Personnel Office%"), Branch.id.notin_(demo_branch_ids)).order_by(Branch.id).first()
+    remap = {}
+    if src_ho:
+        remap[src_ho.id] = ho.id
+    if src_admin:
+        remap[src_admin.id] = admin.id
+    if src_personnel:
+        remap[src_personnel.id] = personnel.id
+
+    n = 0
+    sp_ids = [r.id for r in db.query(SalaryPayment.id).filter(SalaryPayment.employee_id.in_(emp_ids))]
+    rq_ids = [r.id for r in db.query(RenewalRequest.id).filter(
+        (RenewalRequest.request_no.like(f"{DEMO_TAG}-%")) | (RenewalRequest.employee_id.in_(emp_ids)))]
+
+    for old, new in remap.items():
+        n += db.query(Employee).filter(Employee.id.in_(emp_ids), Employee.branch_id == old).update({"branch_id": new}, synchronize_session=False)
+        n += db.query(SalaryPayment).filter(SalaryPayment.employee_id.in_(emp_ids), SalaryPayment.branch_id == old).update({"branch_id": new}, synchronize_session=False)
+        n += db.query(StaffTransfer).filter(StaffTransfer.employee_id.in_(emp_ids), StaffTransfer.from_branch_id == old).update({"from_branch_id": new}, synchronize_session=False)
+        n += db.query(StaffTransfer).filter(StaffTransfer.employee_id.in_(emp_ids), StaffTransfer.to_branch_id == old).update({"to_branch_id": new}, synchronize_session=False)
+        n += db.query(EosSettlement).filter(EosSettlement.employee_id.in_(emp_ids), EosSettlement.branch_id == old).update({"branch_id": new}, synchronize_session=False)
+        n += db.query(CompanyLicense).filter(CompanyLicense.license_no.like(f"{DEMO_TAG}-%"), CompanyLicense.branch_id == old).update({"branch_id": new}, synchronize_session=False)
+        exp_demo = (Expense.notes == DEMO_TAG)
+        if sp_ids:
+            exp_demo = exp_demo | Expense.salary_payment_id.in_(sp_ids)
+        if rq_ids:
+            exp_demo = exp_demo | Expense.renewal_request_id.in_(rq_ids)
+        n += db.query(Expense).filter(exp_demo, Expense.branch_id == old).update({"branch_id": new}, synchronize_session=False)
+        n += db.query(CashTransaction).filter(CashTransaction.reference == DEMO_TAG, CashTransaction.branch_id == old).update({"branch_id": new}, synchronize_session=False)
+
+    n += db.query(CompanyLicense).filter(CompanyLicense.license_no.like(f"{DEMO_TAG}-%")).update({"brand_id": brand.id}, synchronize_session=False)
+    if rq_ids:
+        n += db.query(RenewalRequest).filter(RenewalRequest.id.in_(rq_ids)).update({"brand_id": brand.id}, synchronize_session=False)
+    db.commit()
+    print(f"Moved {n} demo rows into brand '{DEMO_COMPANY}' (id {brand.id}); branches: {sorted(demo_branch_ids)}.")
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
-    if cmd not in ("seed", "purge"):
+    if cmd not in ("seed", "purge", "isolate"):
         print(__doc__)
         sys.exit(1)
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        (seed if cmd == "seed" else purge)(db)
+        {"seed": seed, "purge": purge, "isolate": isolate}[cmd](db)
     finally:
         db.close()
 
