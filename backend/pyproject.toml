@@ -1,0 +1,31 @@
+[project]
+name = "hrm-backend"
+version = "1.0.0"
+description = "HRM System - Backend"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi[standard]>=0.109.0",
+    "uvicorn[standard]>=0.25.0",
+    "sqlalchemy>=2.0.25",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.2.1",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "bcrypt==4.0.1",
+    "openpyxl>=3.1.0",
+    "reportlab>=4.0.0",
+    "httpx>=0.25.0",
+    "arabic-reshaper>=3.0.0",
+    "python-bidi>=0.6.0",
+    "python-dateutil>=2.8.0",
+    "psycopg[binary]>=3.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app", "app.models", "app.routes", "app.utils"]
