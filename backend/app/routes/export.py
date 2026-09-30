@@ -216,7 +216,7 @@ def _respond(fmt: str, header: List[str], data: List[list], filename: str, title
 def _expenses_data(db, user, branch_id, brand_id=None, date_from=None, date_to=None):
     bmap = _branch_map(db)
     q = db.query(Expense)
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if branch_id:
         q = q.filter(Expense.branch_id == branch_id)
     elif bb_ids is not None:
@@ -235,7 +235,7 @@ def _expenses_data(db, user, branch_id, brand_id=None, date_from=None, date_to=N
 def _hr_data(db, user, branch_id, brand_id=None):
     bmap = _branch_map(db)
     q = _exclude_left_employees(db.query(Employee))
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if branch_id:
         q = q.filter(Employee.branch_id == branch_id)
     elif bb_ids is not None:
@@ -257,7 +257,7 @@ def _hr_data(db, user, branch_id, brand_id=None):
 def _cash_data(db, user, branch_id, brand_id=None):
     bmap = _branch_map(db)
     q = db.query(CashBalance)
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if branch_id:
         q = q.filter(CashBalance.branch_id == branch_id)
     elif bb_ids is not None:
@@ -278,7 +278,7 @@ def _salary_data(db, user, month, lang: str = "en", brand_id=None):
     q = db.query(SalaryPayment)
     if month:
         q = q.filter(SalaryPayment.month == month)
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if bb_ids is not None:
         q = q.filter(SalaryPayment.branch_id.in_(bb_ids))
     rows = q.order_by(SalaryPayment.month.desc()).all()
@@ -493,7 +493,7 @@ def export_salary_slips_pdf(
     q = db.query(SalaryPayment)
     if month:
         q = q.filter(SalaryPayment.month == month)
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if bb_ids is not None:
         q = q.filter(SalaryPayment.branch_id.in_(bb_ids))
     records = q.all()

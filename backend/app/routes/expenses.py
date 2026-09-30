@@ -49,7 +49,7 @@ def list_expenses(branch_id: Optional[int] = None, brand_id: Optional[int] = Non
                   db: Session = Depends(get_db),
                   user: User = Depends(get_current_user)):
     q = db.query(Expense)
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if user.role == "staff" and user.branch_id:
         # Branch staff only ever see their own branch's expenses
         q = q.filter(Expense.branch_id == user.branch_id)

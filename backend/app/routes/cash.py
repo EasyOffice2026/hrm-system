@@ -41,7 +41,7 @@ def list_transactions(
     user: User = Depends(get_current_user),
 ):
     q = db.query(CashTransaction)
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if user.role in PERSONNEL_ROLES:
         pids = _personnel_branch_ids(db, user)
         q = q.filter(CashTransaction.branch_id.in_([branch_id] if branch_id in pids else pids))

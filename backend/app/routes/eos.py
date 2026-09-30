@@ -148,7 +148,7 @@ def list_settlements(brand_id: Optional[int] = None, branch_id: Optional[int] = 
     if branch_id:
         q = q.filter(EosSettlement.branch_id == branch_id)
     else:
-        bb = _brand_branch_ids(db, brand_id)
+        bb = _brand_branch_ids(db, brand_id, user)
         if bb is not None:
             q = q.filter(EosSettlement.branch_id.in_(bb))
     if status:

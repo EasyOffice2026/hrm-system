@@ -36,7 +36,7 @@ def dashboard(branch_id: Optional[int] = None, brand_id: Optional[int] = None,
               date_from: Optional[str] = None, date_to: Optional[str] = None,
               db: Session = Depends(get_db),
               user: User = Depends(get_current_user)):
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     staff_bid = branch_id or (user.branch_id if user.role == "staff" else None)
 
     def apply_branch(q, model):

@@ -29,12 +29,22 @@ router = APIRouter(prefix="/api/hr", tags=["hr"], dependencies=[Depends(_personn
 SALARY_VISIBLE_ROLES = ("owner", "manager", "accountant")
 
 
-def _brand_branch_ids(db: Session, brand_id: Optional[int]) -> Optional[list]:
-    """Return list of branch IDs for a brand, or None if no filter."""
-    if not brand_id:
+def _brand_branch_ids(db: Session, brand_id: Optional[int], user: Optional[User] = None) -> Optional[list]:
+    """Return list of branch IDs for a brand, or None if no filter.
+
+    When the user has explicit allowed_brands, the result is always clamped
+    to those brands (a disallowed brand_id yields an empty list).
+    """
+    allowed = user.get_allowed_brands() if user is not None else None
+    if brand_id:
+        if allowed and brand_id not in allowed:
+            return []
+        brands = [brand_id]
+    elif allowed:
+        brands = allowed
+    else:
         return None
-    ids = [b.id for b in db.query(Branch).filter(Branch.brand_id == brand_id).all()]
-    return ids
+    return [b.id for b in db.query(Branch.id).filter(Branch.brand_id.in_(brands)).all()]
 
 
 def _exclude_left_employees(q):
@@ -149,7 +159,7 @@ def list_employees(branch_id: Optional[int] = None, brand_id: Optional[int] = No
     q = db.query(Employee)
     if not include_left:
         q = _exclude_left_employees(q)
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if user.role == "staff" and user.branch_id:
         q = q.filter(Employee.branch_id == user.branch_id)
     elif branch_id:
@@ -426,7 +436,7 @@ def list_overtime(employee_id: Optional[int] = None, month: Optional[str] = None
     staff_emp_ids = _staff_emp_ids(db, user)
     if staff_emp_ids is not None:
         q = q.filter(OvertimeRecord.employee_id.in_(staff_emp_ids)) if staff_emp_ids else q.filter(False)
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if bb_ids is not None:
         emp_ids = [e.id for e in db.query(Employee.id).filter(Employee.branch_id.in_(bb_ids)).all()]
         q = q.filter(OvertimeRecord.employee_id.in_(emp_ids)) if emp_ids else q.filter(False)
@@ -651,7 +661,7 @@ def list_salary_payments(
         q = q.filter(SalaryPayment.month == month)
     if employee_id:
         q = q.filter(SalaryPayment.employee_id == employee_id)
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if bb_ids is not None:
         q = q.filter(SalaryPayment.branch_id.in_(bb_ids))
     rows = q.order_by(SalaryPayment.month.desc(), SalaryPayment.id).all()
@@ -727,7 +737,7 @@ def generate_monthly_payroll(
         Employee.is_active == True,
         Employee.actual_salary > 0,
     )
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     if bb_ids is not None:
         eq = eq.filter(Employee.branch_id.in_(bb_ids))
     employees = eq.all()
@@ -1176,7 +1186,7 @@ def list_transfers(brand_id: Optional[int] = None, db: Session = Depends(get_db)
             (StaffTransfer.from_branch_id == sbid) | (StaffTransfer.to_branch_id == sbid)
         )
     else:
-        bb_ids = _brand_branch_ids(db, brand_id)
+        bb_ids = _brand_branch_ids(db, brand_id, user)
         if bb_ids is not None:
             q = q.filter(StaffTransfer.from_branch_id.in_(bb_ids))
     return q.order_by(StaffTransfer.created_at.desc()).all()
@@ -1257,7 +1267,7 @@ def list_loans(employee_id: Optional[int] = None, brand_id: Optional[int] = None
     if employee_id:
         q = q.filter(AdvanceLoan.employee_id == employee_id)
     elif brand_id:
-        bb_ids = _brand_branch_ids(db, brand_id)
+        bb_ids = _brand_branch_ids(db, brand_id, user)
         if bb_ids is not None:
             emp_ids = [e.id for e in db.query(Employee.id).filter(Employee.branch_id.in_(bb_ids)).all()]
             q = q.filter(AdvanceLoan.employee_id.in_(emp_ids)) if emp_ids else q.filter(False)
@@ -1497,7 +1507,7 @@ def list_benefits_deductions(employee_id: Optional[int] = None, month: Optional[
     if month:
         q = q.filter(StaffBenefitDeduction.month == month)
     if brand_id and not employee_id:
-        bb_ids = _brand_branch_ids(db, brand_id)
+        bb_ids = _brand_branch_ids(db, brand_id, user)
         if bb_ids is not None:
             emp_ids = [e.id for e in db.query(Employee.id).filter(Employee.branch_id.in_(bb_ids)).all()]
             q = q.filter(StaffBenefitDeduction.employee_id.in_(emp_ids)) if emp_ids else q.filter(False)
@@ -1594,7 +1604,7 @@ def list_leaves(employee_id: Optional[int] = None, month: Optional[str] = None,
     if month:
         q = q.filter(LeaveRecord.month == month)
     if brand_id and not employee_id:
-        bb_ids = _brand_branch_ids(db, brand_id)
+        bb_ids = _brand_branch_ids(db, brand_id, user)
         if bb_ids is not None:
             emp_ids = [e.id for e in db.query(Employee.id).filter(Employee.branch_id.in_(bb_ids)).all()]
             q = q.filter(LeaveRecord.employee_id.in_(emp_ids)) if emp_ids else q.filter(False)
@@ -1738,7 +1748,7 @@ def list_resignations(brand_id: Optional[int] = None, db: Session = Depends(get_
     if staff_emp_ids is not None:
         q = q.filter(Resignation.employee_id.in_(staff_emp_ids)) if staff_emp_ids else q.filter(False)
     if brand_id:
-        bb_ids = _brand_branch_ids(db, brand_id)
+        bb_ids = _brand_branch_ids(db, brand_id, user)
         if bb_ids is not None:
             emp_ids = [e.id for e in db.query(Employee.id).filter(Employee.branch_id.in_(bb_ids)).all()]
             q = q.filter(Resignation.employee_id.in_(emp_ids)) if emp_ids else q.filter(False)
@@ -2271,7 +2281,7 @@ def list_pending_approvals(brand_id: Optional[int] = None,
     """List all pending HR transactions for manager approval."""
     if user.role not in MANAGER_ROLES:
         raise HTTPException(403, "Only owner/manager can view pending approvals")
-    bb_ids = _brand_branch_ids(db, brand_id)
+    bb_ids = _brand_branch_ids(db, brand_id, user)
     results = []
 
     # Pending salary payments
