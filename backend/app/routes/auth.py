@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.models.branch import Branch
-from app.models.hr import Brand
 from app.utils.auth import verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -40,13 +39,6 @@ def _user_payload(db: Session, user: User) -> dict:
         "allowed_tabs": user.get_allowed_tabs(),
         "allowed_brands": resolve_allowed_brands(db, user),
     }
-
-
-@router.get("/brands")
-def public_brands(db: Session = Depends(get_db)):
-    """Active brands for the pre-login landing page (no auth required)."""
-    rows = db.query(Brand).filter(Brand.status == "active").order_by(Brand.id).all()
-    return [{"id": b.id, "name_en": b.name_en, "name_ar": b.name_ar or ""} for b in rows]
 
 
 @router.post("/login")
