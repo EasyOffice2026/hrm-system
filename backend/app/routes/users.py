@@ -47,6 +47,11 @@ def list_users(db: Session = Depends(get_db), user: User = Depends(get_current_u
     if user.role not in ("owner", "manager", "accountant"):
         raise HTTPException(403, "Not authorized")
     users = db.query(User).order_by(User.id).all()
+    if user.role != "owner":
+        scope = set(user.get_allowed_brands() or [])
+        if scope:
+            users = [u for u in users
+                     if u.id == user.id or (u.get_allowed_brands() and scope & set(u.get_allowed_brands()))]
     return [
         {
             "id": u.id,
