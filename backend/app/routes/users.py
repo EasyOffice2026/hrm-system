@@ -6,6 +6,7 @@ import json
 
 from app.database import get_db
 from app.models.user import User
+from app.models.branch import Branch
 from app.utils.auth import get_current_user, hash_password
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -47,11 +48,19 @@ def list_users(db: Session = Depends(get_db), user: User = Depends(get_current_u
     if user.role not in ("owner", "manager", "accountant"):
         raise HTTPException(403, "Not authorized")
     users = db.query(User).order_by(User.id).all()
-    if user.role != "owner":
-        scope = set(user.get_allowed_brands() or [])
-        if scope:
-            users = [u for u in users
-                     if u.id == user.id or (u.get_allowed_brands() and scope & set(u.get_allowed_brands()))]
+    scope = set(user.get_allowed_brands() or [])
+    if scope:
+        branch_brand = {b.id: b.brand_id for b in db.query(Branch.id, Branch.brand_id).all()}
+
+        def in_scope(u: User) -> bool:
+            if u.id == user.id:
+                return True
+            ub = u.get_allowed_brands()
+            if ub:
+                return bool(scope & set(ub))
+            return u.branch_id is not None and branch_brand.get(u.branch_id) in scope
+
+        users = [u for u in users if in_scope(u)]
     return [
         {
             "id": u.id,

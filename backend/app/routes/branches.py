@@ -18,10 +18,15 @@ def _out(b: Branch):
 
 @router.get("/")
 def list_branches(brand_id: Optional[int] = None, scope: Optional[str] = None,
-                  db: Session = Depends(get_db)):
+                  db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     q = db.query(Branch)
+    allowed = user.get_allowed_brands()
     if brand_id:
+        if allowed and brand_id not in allowed:
+            return []
         q = q.filter(Branch.brand_id == brand_id)
+    elif allowed:
+        q = q.filter(Branch.brand_id.in_(allowed))
     if scope == "personnel":
         q = q.filter(Branch.name.like("Personnel Office%"))
     elif scope == "operating":
